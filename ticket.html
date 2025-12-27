@@ -346,7 +346,7 @@
     <script>
         const API_URL = 'https://ethimp0.shop/api5.php';
         
-        async function apiRequest(action, body) {
+        async function apiRequest(action, body = {}) {
             try {
                 const res = await fetch(`${API_URL}?action=${action}`, {
                     method: 'POST',
