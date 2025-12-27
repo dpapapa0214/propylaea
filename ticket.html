@@ -770,20 +770,22 @@
                 });
 
                 function tick() {
-                    if (!scanActive) return;
                     if (video.readyState === video.HAVE_ENOUGH_DATA) {
                         if(loadingMessage) loadingMessage.hidden = true;
                         canvasElement.hidden = false;
                         canvasElement.height = video.videoHeight;
                         canvasElement.width = video.videoWidth;
                         canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-                        const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-                        const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
-                        if (code) logic.processScan(code.data);
-                        else requestAnimationFrame(tick);
-                    } else {
-                        requestAnimationFrame(tick);
+                        
+                        if (scanActive) {
+                            const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+                            const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+                            if (code) {
+                                logic.processScan(code.data);
+                            }
+                        }
                     }
+                    requestAnimationFrame(tick);
                 }
             },
             stopScanner: () => {
@@ -794,12 +796,22 @@
                 }
             },
             processScan: async (content) => {
-                scanActive = false;
+                scanActive = false; // Pause immediately
+                
                 let id;
-                try { id = JSON.parse(content).id; } 
-                catch(e) { 
-                    setTimeout(() => { scanActive = true; if(videoStream) requestAnimationFrame(() => logic.startScanner().tick); }, 1000); 
+                try { 
+                    const data = JSON.parse(content);
+                    id = data.id;
+                } catch(e) { 
+                    console.log("JSON Parse Failed or Non-JSON QR");
+                    setTimeout(() => { scanActive = true; }, 1000); 
                     return; 
+                }
+
+                if (!id) {
+                    console.log("No ID in QR data");
+                    setTimeout(() => { scanActive = true; }, 1000);
+                    return;
                 }
                 
                 const el = document.getElementById('scan-result');
@@ -822,33 +834,9 @@
                     el.innerHTML = `<div><i class="fa-solid fa-circle-xmark text-4xl text-red-400 mb-2"></i><h3 class="font-bold text-white">エラー</h3><p class="text-xs text-red-300 mt-1">${e.message}</p></div>`;
                 }
                 
-                // Resume scanning
+                // Resume scanning after delay to show result
                 setTimeout(() => { 
                     scanActive = true; 
-                    if(videoStream) {
-                        const video = document.getElementById('video');
-                        if(video) {
-                            const canvasElement = document.getElementById('canvas');
-                            const canvas = canvasElement.getContext('2d', { willReadFrequently: true });
-                            
-                            function tick() {
-                                if (!scanActive) return;
-                                if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                                    canvasElement.hidden = false;
-                                    canvasElement.height = video.videoHeight;
-                                    canvasElement.width = video.videoWidth;
-                                    canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-                                    const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-                                    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
-                                    if (code) logic.processScan(code.data);
-                                    else requestAnimationFrame(tick);
-                                } else {
-                                    requestAnimationFrame(tick);
-                                }
-                            }
-                            requestAnimationFrame(tick);
-                        }
-                    }
                 }, 3000);
             }
         };
