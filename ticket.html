@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>NexTicket Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Stable QR Code Libraries -->
+    
+    <!-- QR Code Generator -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <!-- jsQR Library for Scanning -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script>
@@ -16,7 +19,7 @@
                 extend: {
                     fontFamily: { sans: ['Outfit', 'sans-serif'] },
                     colors: {
-                        glass: 'rgba(30, 41, 59, 0.7)',
+                        glass: 'rgba(15, 23, 42, 0.9)',
                         brand: { 500: '#6366f1', 600: '#4f46e5' }
                     }
                 }
@@ -26,9 +29,9 @@
     <style>
         body { background-color: #020617; color: #f8fafc; }
         .glass-panel {
-            background: rgba(15, 23, 42, 0.85);
+            background: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .sidebar-item.active {
             background: linear-gradient(90deg, rgba(99, 102, 241, 0.2) 0%, transparent 100%);
@@ -43,20 +46,22 @@
                         radial-gradient(circle at right center, transparent 10px, #1e293b 10px) right center / 50% 100% no-repeat;
             background-color: #1e293b;
         }
+        
+        .h-safe-screen { height: 100vh; height: 100dvh; }
     </style>
 </head>
-<body class="h-screen w-screen overflow-hidden flex text-sm md:text-base">
+<body class="h-safe-screen w-screen overflow-hidden flex text-sm md:text-base">
 
     <!-- 1. AUTH SCREEN -->
     <div id="view-auth" class="fixed inset-0 z-50 flex items-center justify-center bg-[#020617] bg-[url('https://images.unsplash.com/photo-1540575467063-178a50935339?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center">
         <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"></div>
-        <div class="relative w-full max-w-md p-8 glass-panel rounded-2xl shadow-2xl mx-4 animate-fade-in">
+        <div class="relative w-full max-w-md p-8 glass-panel rounded-2xl shadow-2xl mx-4 animate-fade-in flex flex-col max-h-[90dvh] overflow-y-auto">
             <div class="text-center mb-8">
                 <h1 class="text-3xl font-bold tracking-widest text-white mb-2">NexTicket<span class="text-brand-500">.</span></h1>
                 <p class="text-slate-400">次世代チケット管理プラットフォーム</p>
             </div>
             
-            <div class="flex bg-slate-800/50 p-1 rounded-xl mb-6">
+            <div class="flex bg-slate-800/50 p-1 rounded-xl mb-6 shrink-0">
                 <button onclick="auth.toggleMode('login')" id="tab-login" class="flex-1 py-2.5 rounded-lg font-medium transition bg-brand-600 text-white shadow-lg">ログイン</button>
                 <button onclick="auth.toggleMode('register')" id="tab-register" class="flex-1 py-2.5 rounded-lg font-medium text-slate-400 hover:text-white transition">新規登録</button>
             </div>
@@ -64,7 +69,6 @@
             <form id="auth-form" class="space-y-4">
                 <input type="text" id="auth-user" placeholder="ユーザー名" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-white focus:border-brand-500 outline-none transition" required>
                 
-                <!-- Email Field (New) -->
                 <div id="field-email" class="hidden">
                     <input type="email" id="auth-email" placeholder="メールアドレス" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-white focus:border-brand-500 outline-none transition">
                 </div>
@@ -88,7 +92,6 @@
 
     <!-- 2. MAIN APP LAYOUT -->
     <div id="app-layout" class="flex w-full h-full hidden opacity-0 transition-opacity duration-500">
-        
         <!-- PC Sidebar -->
         <aside class="hidden md:flex flex-col w-64 glass-panel border-r border-white/5 z-20">
             <div class="p-6">
@@ -114,7 +117,7 @@
         </header>
 
         <!-- Content Area -->
-        <main class="flex-1 relative overflow-hidden bg-slate-900/50 w-full pt-16 md:pt-0 pb-20 md:pb-0">
+        <main class="flex-1 relative overflow-hidden bg-slate-900/50 w-full pt-16 md:pt-0 pb-24 md:pb-0">
             <div id="content-container" class="h-full overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth"></div>
         </main>
 
@@ -126,7 +129,7 @@
 
     <!-- ORGANIZER DASHBOARD -->
     <template id="tmpl-organizer">
-        <div class="max-w-6xl mx-auto space-y-8 animate-fade-in">
+        <div class="max-w-6xl mx-auto space-y-8 animate-fade-in pb-20">
             <header class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                 <div>
                     <h2 class="text-3xl font-bold text-white mb-1">イベント管理</h2>
@@ -140,7 +143,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="glass-panel p-6 rounded-2xl border-l-4 border-brand-500">
                     <p class="text-slate-400 text-xs uppercase mb-2 font-bold tracking-wider">Total Events</p>
-                    <h3 class="text-3xl font-bold text-white" id="stats-events">-</h3>
+                    <h3 class="text-3xl font-bold text-white" id="stats-events">0</h3>
                 </div>
                 <div onclick="router.navigate('scanner')" class="glass-panel p-6 rounded-2xl cursor-pointer hover:bg-white/5 transition border-l-4 border-emerald-500 group">
                     <div class="flex justify-between items-start">
@@ -166,7 +169,7 @@
 
     <!-- ATTENDEE DASHBOARD -->
     <template id="tmpl-attendee">
-        <div class="max-w-2xl mx-auto space-y-6 animate-fade-in">
+        <div class="max-w-2xl mx-auto space-y-6 animate-fade-in pb-20">
             <header>
                 <h2 class="text-3xl font-bold text-white">My Tickets</h2>
                 <p class="text-slate-400">所有しているチケット一覧</p>
@@ -179,33 +182,43 @@
                     <button type="submit" class="bg-brand-600 hover:bg-brand-500 text-white px-6 rounded-xl font-bold shadow-lg transition">追加</button>
                 </form>
             </div>
-            <div id="my-ticket-list" class="space-y-4 pb-20"></div>
+            <div id="my-ticket-list" class="space-y-4"></div>
         </div>
     </template>
 
-    <!-- SCANNER -->
+    <!-- SCANNER (Using jsQR) -->
     <template id="tmpl-scanner">
-        <div class="h-full flex flex-col max-w-lg mx-auto animate-fade-in">
+        <div class="h-full flex flex-col max-w-lg mx-auto animate-fade-in pb-10">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold text-white">QR Scanner</h2>
                 <button onclick="router.back()" class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition"><i class="fa-solid fa-times"></i></button>
             </div>
             
-            <div class="flex-1 relative bg-black rounded-3xl overflow-hidden border border-slate-700 shadow-2xl">
-                <div id="reader" class="w-full h-full object-cover"></div>
-                <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
+            <div class="flex-1 relative bg-black rounded-3xl overflow-hidden border border-slate-700 shadow-2xl min-h-[300px] flex items-center justify-center">
+                <!-- Video Element (Hidden but active) -->
+                <video id="video" playsinline class="absolute inset-0 w-full h-full object-cover"></video>
+                <!-- Canvas Element (For jsQR processing) -->
+                <canvas id="canvas" class="hidden"></canvas>
+                
+                <!-- Scan Overlay -->
+                <div class="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
                     <div class="w-64 h-64 border-2 border-brand-500/50 rounded-2xl relative">
                         <div class="absolute top-0 w-full h-0.5 bg-brand-500 shadow-[0_0_15px_#6366f1] animate-scan"></div>
-                        <div class="absolute inset-0 border-[2000px] border-black/60 -m-[2000px] z-10"></div>
+                        <!-- Corner Markers -->
+                        <div class="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-brand-500"></div>
+                        <div class="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-brand-500"></div>
+                        <div class="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-brand-500"></div>
+                        <div class="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-brand-500"></div>
                     </div>
+                </div>
+                
+                <div id="loadingMessage" class="absolute z-20 text-slate-400 text-sm bg-black/50 px-4 py-2 rounded">
+                    🎥 カメラ起動中...
                 </div>
             </div>
             
-            <!-- Debug Info Box -->
-            <div id="scanner-debug" class="hidden mt-2 p-2 bg-slate-900/80 rounded text-[10px] text-red-300 font-mono break-all max-h-20 overflow-y-auto border border-red-900"></div>
-
             <div id="scan-result" class="mt-4 min-h-[100px] glass-panel rounded-2xl p-4 flex items-center justify-center text-center transition-all">
-                <p class="text-slate-500 text-sm">カメラを起動中...<br>※HTTPS環境が必要です</p>
+                <p class="text-slate-500 text-sm">カメラをQRコードに向けてください</p>
             </div>
         </div>
         <style>
@@ -216,7 +229,7 @@
 
     <!-- TICKET DETAIL -->
     <template id="tmpl-ticket-detail">
-        <div class="h-full flex flex-col items-center justify-center max-w-md mx-auto p-4 animate-fade-in relative">
+        <div class="h-full flex flex-col items-center justify-center max-w-md mx-auto p-4 animate-fade-in relative pb-20">
             <button onclick="router.back()" class="absolute top-4 left-4 text-white/70 hover:text-white flex items-center gap-2 z-10 bg-black/20 px-3 py-1 rounded-full backdrop-blur">
                 <i class="fa-solid fa-arrow-left"></i> Back
             </button>
@@ -241,7 +254,6 @@
 
                     <div class="bg-white p-2 border-2 border-slate-900 rounded-xl mb-4 shadow-sm min-h-[196px] min-w-[196px] flex items-center justify-center">
                         <div id="qrcode-display"></div>
-                        <p id="qr-error" class="hidden text-red-500 text-xs font-bold text-center">QR Error</p>
                     </div>
                     <p class="text-[10px] text-slate-400 font-mono text-center break-all w-full px-4" id="detail-id">ID</p>
                 </div>
@@ -333,12 +345,34 @@
     </div>
 
     <script>
+        // =========================================================
+        //  CONFIG & API
+        // =========================================================
         const API_URL = 'https://ethimp0.shop/api5.php';
-        let currentUser = null;
-        let html5QrcodeScanner = null;
-        let isScanning = false; // Flag to prevent multiple scans without pausing
+        
+        async function apiRequest(action, data = {}) {
+            try {
+                const response = await fetch(`${API_URL}?action=${action}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                console.error("API Request Failed:", error);
+                throw error;
+            }
+        }
 
-        // --- AUTH ---
+        // =========================================================
+        //  APP LOGIC
+        // =========================================================
+        let currentUser = null;
+        let scanActive = false;
+        let videoStream = null;
+
         const auth = {
             mode: 'login',
             toggleMode: (mode) => {
@@ -365,8 +399,7 @@
                 try {
                     const action = auth.mode; 
                     const body = auth.mode === 'register' ? { username: user, email, password: pass, role } : { username: user, password: pass };
-                    const res = await fetch(`${API_URL}?action=${action}`, { method: 'POST', body: JSON.stringify(body) });
-                    const data = await res.json();
+                    const data = await apiRequest(action, body);
 
                     if (!data.success && !data.user) throw new Error(data.error || '処理に失敗しました');
 
@@ -393,7 +426,6 @@
             }
         };
 
-        // --- APP CONTROLLER ---
         const app = {
             init: () => {
                 const saved = localStorage.getItem('nex_user_v2');
@@ -437,7 +469,8 @@
                     }
                 } else if (view === 'scanner') {
                     container.appendChild(document.getElementById('tmpl-scanner').content.cloneNode(true));
-                    logic.startScanner();
+                    // Scanner needs time for DOM to be ready
+                    setTimeout(logic.startScanner, 100);
                 } else if (view === 'ticket-detail') {
                     container.appendChild(document.getElementById('tmpl-ticket-detail').content.cloneNode(true));
                 }
@@ -481,34 +514,21 @@
                     startSel.value = 'A';
                     endSel.value = 'C';
                 }
-            },
-            logScannerError: (message) => {
-                const box = document.getElementById('scanner-debug');
-                if(box) {
-                    box.classList.remove('hidden');
-                    const line = document.createElement('div');
-                    line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-                    box.appendChild(line);
-                    box.scrollTop = box.scrollHeight;
-                }
-                console.error(message);
             }
         };
 
-        // --- BUSINESS LOGIC ---
         const logic = {
             loadOrganizerEvents: async () => {
                 const list = document.getElementById('org-event-list');
                 if(!list) return;
                 try {
-                    const res = await fetch(`${API_URL}?action=get_events`);
-                    const data = await res.json();
+                    const data = await apiRequest('get_events');
                     document.getElementById('stats-events').textContent = data.events.length;
-                    list.innerHTML = data.events.map(e => `
+                    list.innerHTML = data.events.length ? data.events.map(e => `
                         <div class="p-6 hover:bg-white/5 transition flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group border-b border-white/5 last:border-0">
-                            <div><h4 class="font-bold text-lg text-white group-hover:text-brand-400 transition">${e.name}</h4><p class="text-sm text-slate-400 mt-1"><i class="fa-regular fa-clock mr-1"></i> ${e.date || 'TBD'} <span class="mx-2 opacity-50">|</span> <i class="fa-solid fa-location-dot mr-1"></i> ${e.location || 'Unknown'}</p></div>
+                            <div><h4 class="font-bold text-lg text-white group-hover:text-brand-400 transition">${e.eventName}</h4><p class="text-sm text-slate-400 mt-1"><i class="fa-regular fa-clock mr-1"></i> ${e.eventDate || 'TBD'} <span class="mx-2 opacity-50">|</span> <i class="fa-solid fa-location-dot mr-1"></i> ${e.eventLocation || 'Unknown'}</p></div>
                             <button onclick="logic.openIssueModal('${e.id}')" class="w-full md:w-auto bg-slate-800 border border-slate-600 px-5 py-2.5 rounded-lg text-sm hover:bg-brand-600 hover:border-brand-500 hover:text-white transition font-medium shadow-md"><i class="fa-solid fa-ticket mr-2"></i>発行設定</button>
-                        </div>`).join('');
+                        </div>`).join('') : '<div class="p-12 text-center text-slate-500">イベントがありません</div>';
                 } catch(e) { list.innerHTML = `<div class="p-8 text-center text-red-400">読み込みエラー<br>${e.message}</div>`; }
             },
             createEvent: async (e) => {
@@ -517,10 +537,10 @@
                 const date = document.getElementById('new-evt-date').value;
                 const loc = document.getElementById('new-evt-loc').value;
                 try {
-                    await fetch(`${API_URL}?action=create_event`, { method: 'POST', body: JSON.stringify({ organizerId: currentUser.id, eventName: name, eventDate: date, eventLocation: loc }) });
+                    await apiRequest('create_event', { organizerId: currentUser.id, eventName: name, eventDate: date, eventLocation: loc });
                     ui.closeModal('modal-create-event');
                     logic.loadOrganizerEvents();
-                } catch(e) { alert('Failed'); }
+                } catch(e) { alert('Failed: ' + e.message); }
             },
             openIssueModal: (eventId) => {
                 document.getElementById('issue-event-id').value = eventId;
@@ -557,7 +577,7 @@
                     return;
                 }
 
-                // Shuffle and pick
+                // Shuffle
                 for (let i = candidates.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
@@ -565,39 +585,25 @@
                 const selectedSeats = candidates.slice(0, qty);
 
                 try {
-                    const res = await fetch(`${API_URL}?action=issue_ticket`, {
-                        method: 'POST', body: JSON.stringify({ eventId, seats: selectedSeats })
-                    });
-                    const data = await res.json();
-                    
+                    const data = await apiRequest('issue_ticket', { eventId, seats: selectedSeats });
                     if(data.success) {
                         ui.closeModal('modal-issue-ticket');
                         const container = document.getElementById('res-list-container');
                         container.innerHTML = data.tickets.map(t => `
                             <div class="bg-slate-100 border border-slate-300 rounded-lg p-3 text-left">
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="text-xs font-bold text-slate-500 uppercase">Seat</span>
-                                    <span class="text-xs font-bold text-slate-500 uppercase">Code</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-lg font-bold text-slate-800">${t.seat}</span>
-                                    <span class="text-lg font-mono font-bold text-slate-800 select-all tracking-wider">${t.claimCode}</span>
-                                </div>
-                            </div>
-                        `).join('');
+                                <div class="flex justify-between items-center mb-1"><span class="text-xs font-bold text-slate-500 uppercase">Seat</span><span class="text-xs font-bold text-slate-500 uppercase">Code</span></div>
+                                <div class="flex justify-between items-center"><span class="text-lg font-bold text-slate-800">${t.seat}</span><span class="text-lg font-mono font-bold text-slate-800 select-all tracking-wider">${t.claimCode}</span></div>
+                            </div>`).join('');
                         ui.showModal('modal-issue-result');
-                    } else {
-                        alert('発行エラー: ' + (data.error || '不明なエラー'));
-                    }
-                } catch(e) { alert('通信エラー: サーバーを確認してください'); }
+                    } else { alert('発行エラー: ' + (data.error || '不明なエラー')); }
+                } catch(e) { alert('通信エラー: ' + e.message); }
             },
             loadMyTickets: async () => {
                 const list = document.getElementById('my-ticket-list');
                 if(!list) return;
                 list.innerHTML = '<div class="text-center py-10 opacity-50"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></div>';
                 try {
-                    const res = await fetch(`${API_URL}?action=my_tickets&userId=${currentUser.id}`);
-                    const data = await res.json();
+                    const data = await apiRequest('my_tickets', { userId: currentUser.id });
                     if(!data.tickets || data.tickets.length === 0) {
                         list.innerHTML = '<div class="text-center py-10 opacity-30 text-slate-400">チケットがありません</div>';
                         return;
@@ -611,7 +617,7 @@
                             </div>
                             <div class="flex items-center px-6 border-l border-dashed border-white/10"><span class="text-xs font-bold px-3 py-1 rounded-full ${t.status === 'used' ? 'bg-slate-700 text-slate-400' : 'bg-brand-500/20 text-brand-400'}">${t.status === 'used' ? 'USED' : 'SHOW'}</span></div>
                         </div>`).join('');
-                } catch(e) { list.innerHTML = 'Error'; }
+                } catch(e) { list.innerHTML = 'Error: ' + e.message; }
             },
             claimTicket: async (e) => {
                 e.preventDefault();
@@ -619,11 +625,10 @@
                 const code = input.value;
                 if(!code) return;
                 try {
-                    const res = await fetch(`${API_URL}?action=claim_ticket`, { method: 'POST', body: JSON.stringify({ userId: currentUser.id, code }) });
-                    const data = await res.json();
+                    const data = await apiRequest('claim_ticket', { userId: currentUser.id, code });
                     if(data.success) { alert('チケットを追加しました！'); input.value = ''; logic.loadMyTickets(); }
                     else { alert('エラー: ' + (data.error || '無効なコード')); }
-                } catch(e) { alert('通信エラー'); }
+                } catch(e) { alert('通信エラー: ' + e.message); }
             },
             showTicketDetail: (ticket) => {
                 router.navigate('ticket-detail');
@@ -640,56 +645,87 @@
 
                     const qrContainer = document.getElementById('qrcode-display');
                     qrContainer.innerHTML = '';
-                    document.getElementById('qr-error').classList.add('hidden');
                     try {
                         new QRCode(qrContainer, {
                             text: JSON.stringify({ id: ticket.id }),
                             width: 196, height: 196, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H
                         });
-                    } catch (err) { document.getElementById('qr-error').classList.remove('hidden'); }
+                    } catch (err) {}
                 }, 100);
             },
             
-            // --- Stable Scanner Logic ---
+            // ===================================
+            // jsQR SCANNER IMPLEMENTATION
+            // ===================================
             startScanner: () => {
-                if(html5QrcodeScanner) { ui.logScannerError("Scanner already instance"); return; }
-                
-                isScanning = true; // Flag enabled
+                const video = document.getElementById('video');
+                const canvasElement = document.getElementById('canvas');
+                const canvas = canvasElement.getContext('2d', { willReadFrequently: true });
+                const loadingMessage = document.getElementById('loadingMessage');
                 const resultBox = document.getElementById('scan-result');
-                resultBox.innerHTML = '<p class="text-slate-500">カメラ起動中...</p>';
-                resultBox.className = "mt-4 min-h-[100px] glass-panel rounded-2xl p-4 flex items-center justify-center text-center transition-all";
-
-                html5QrcodeScanner = new Html5Qrcode("reader");
-                const config = { fps: 10, qrbox: { width: 250, height: 250 } };
                 
-                html5QrcodeScanner.start({ facingMode: "environment" }, config,
-                    (decodedText) => {
-                        // Success Callback
-                        if(!isScanning) return; // Ignore if processing
-                        logic.processScan(decodedText);
-                    },
-                    (error) => {
-                        // Frame read error, normal in video feed, ignore.
-                    }
-                ).catch(err => {
-                    const msg = `Start Failed: ${err}`;
-                    ui.logScannerError(msg);
+                scanActive = true;
+
+                // Use facingMode: environment for rear camera
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function(stream) {
+                    videoStream = stream;
+                    video.srcObject = stream;
+                    video.setAttribute("playsinline", true); // required to tell iOS safari we don't want fullscreen
+                    video.play();
+                    requestAnimationFrame(tick);
+                }).catch(err => {
+                    console.error(err);
                     resultBox.innerHTML = `<p class="text-red-400 font-bold">カメラ起動エラー<br><span class="text-xs font-normal">${err}</span></p>`;
                 });
+
+                function tick() {
+                    if (!scanActive) return;
+                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                        loadingMessage.hidden = true;
+                        canvasElement.hidden = false;
+                        
+                        // Set canvas dimensions to match video
+                        canvasElement.height = video.videoHeight;
+                        canvasElement.width = video.videoWidth;
+                        
+                        // Draw current video frame to canvas
+                        canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+                        
+                        // Get image data from canvas
+                        const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+                        
+                        // Scan for QR code
+                        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                            inversionAttempts: "dontInvert",
+                        });
+
+                        if (code) {
+                            // Found QR Code
+                            logic.processScan(code.data);
+                        } else {
+                            // Keep scanning
+                            requestAnimationFrame(tick);
+                        }
+                    } else {
+                        requestAnimationFrame(tick);
+                    }
+                }
             },
             stopScanner: () => {
-                isScanning = false;
-                if (html5QrcodeScanner) {
-                    html5QrcodeScanner.stop().then(() => { html5QrcodeScanner.clear(); html5QrcodeScanner = null; }).catch(err => ui.logScannerError("Stop Failed: " + err));
+                scanActive = false;
+                if (videoStream) {
+                    videoStream.getTracks().forEach(track => track.stop());
+                    videoStream = null;
                 }
             },
             processScan: async (content) => {
-                isScanning = false; // Block new scans
+                scanActive = false; // Pause scanning
+                
                 let id;
                 try { id = JSON.parse(content).id; } 
                 catch(e) { 
-                    ui.logScannerError("Invalid QR Content: " + content);
-                    setTimeout(() => isScanning = true, 2000); // Resume
+                    // Invalid JSON or format, retry quickly
+                    setTimeout(() => { scanActive = true; requestAnimationFrame(() => logic.startScanner().tick); }, 1000); 
                     return; 
                 }
                 
@@ -697,33 +733,57 @@
                 el.innerHTML = '<div class="text-white"><i class="fa-solid fa-spinner fa-spin mr-2"></i>照合中...</div>';
                 
                 try {
-                    const res = await fetch(`${API_URL}?action=scan`, { method: 'POST', body: JSON.stringify({ ticketId: id }) });
-                    const data = await res.json();
+                    const data = await apiRequest('scan', { ticketId: id });
                     
                     if(data.status === 'success') {
                         el.className = "mt-4 min-h-[100px] rounded-2xl p-4 flex items-center justify-center text-center bg-emerald-500/20 border border-emerald-500/50";
                         el.innerHTML = `<div><i class="fa-solid fa-check-circle text-4xl text-emerald-400 mb-2"></i><h3 class="font-bold text-white text-xl">入場OK</h3><p class="text-emerald-200 mt-1">${data.ticket.owner_name} 様</p><p class="text-sm text-emerald-200/70 font-mono">${data.ticket.seat_number}</p></div>`;
-                        // Play sound or vibrate here if needed
                     } else if(data.status === 'used') {
                         el.className = "mt-4 min-h-[100px] rounded-2xl p-4 flex items-center justify-center text-center bg-yellow-500/20 border border-yellow-500/50";
-                        el.innerHTML = `<div><i class="fa-solid fa-triangle-exclamation text-4xl text-yellow-400 mb-2"></i><h3 class="font-bold text-white text-xl">使用済み</h3><p class="text-yellow-200/70 text-xs mt-1">Checked In: ${data.ticket.used_at || 'Unknown'}</p></div>`;
+                        el.innerHTML = `<div><i class="fa-solid fa-triangle-exclamation text-4xl text-yellow-400 mb-2"></i><h3 class="font-bold text-white text-xl">使用済み</h3></div>`;
                     } else {
                         throw new Error(data.message);
                     }
                 } catch(e) {
-                    ui.logScannerError("API Error: " + e.message);
                     el.className = "mt-4 min-h-[100px] rounded-2xl p-4 flex items-center justify-center text-center bg-red-500/20 border border-red-500/50";
                     el.innerHTML = `<div><i class="fa-solid fa-circle-xmark text-4xl text-red-400 mb-2"></i><h3 class="font-bold text-white">エラー</h3><p class="text-xs text-red-300 mt-1">${e.message}</p></div>`;
                 }
                 
                 // Resume scanning after delay
-                setTimeout(() => { isScanning = true; }, 3000);
+                setTimeout(() => { 
+                    scanActive = true; 
+                    // Re-trigger loop if stream is still active
+                    if(videoStream) {
+                        const video = document.getElementById('video');
+                        const canvasElement = document.getElementById('canvas');
+                        const canvas = canvasElement.getContext('2d', { willReadFrequently: true });
+                        const loadingMessage = document.getElementById('loadingMessage');
+                        
+                        function tick() {
+                            if (!scanActive) return;
+                            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                                loadingMessage.hidden = true;
+                                canvasElement.hidden = false;
+                                canvasElement.height = video.videoHeight;
+                                canvasElement.width = video.videoWidth;
+                                canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+                                const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+                                const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+                                if (code) logic.processScan(code.data);
+                                else requestAnimationFrame(tick);
+                            } else {
+                                requestAnimationFrame(tick);
+                            }
+                        }
+                        requestAnimationFrame(tick);
+                    }
+                }, 3000);
             }
         };
 
         // --- INIT ---
         document.getElementById('auth-form').addEventListener('submit', auth.submit);
-        auth.toggleMode('login'); // Default
+        auth.toggleMode('login');
     </script>
 </body>
 </html>
