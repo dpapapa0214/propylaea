@@ -53,9 +53,9 @@
 <body class="h-safe-screen w-screen overflow-hidden flex text-sm md:text-base">
 
     <!-- 1. AUTH SCREEN -->
-    <div id="view-auth" class="fixed inset-0 z-50 flex items-center justify-center bg-[#020617] bg-[url('https://images.unsplash.com/photo-1540575467063-178a50935339?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center">
+    <div id="view-auth" class="fixed inset-0 z-50 flex items-center justify-center bg-[#020617] bg-[url('https://images.unsplash.com/photo-1540575467063-178a50935339?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center transition-opacity duration-500">
         <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"></div>
-        <div class="relative w-full max-w-md p-8 glass-panel rounded-2xl shadow-2xl mx-4 animate-fade-in flex flex-col max-h-[90dvh] overflow-y-auto">
+        <div class="relative w-full max-w-md p-8 glass-panel rounded-2xl shadow-2xl mx-4 flex flex-col max-h-[90dvh] overflow-y-auto">
             <div class="text-center mb-8">
                 <h1 class="text-3xl font-bold tracking-widest text-white mb-2">NexTicket<span class="text-brand-500">.</span></h1>
                 <p class="text-slate-400">次世代チケット管理プラットフォーム</p>
@@ -107,7 +107,7 @@
                         <p class="text-sm text-white font-medium" id="sidebar-user">User</p>
                         <p class="text-xs">Account</p>
                     </div>
-                    <button onclick="auth.logout()" class="hover:text-red-400 transition"><i class="fa-solid fa-right-from-bracket"></i></button>
+                    <button onclick="auth.logout()" class="hover:text-red-400 transition" title="ログアウト"><i class="fa-solid fa-right-from-bracket"></i></button>
                 </div>
             </div>
         </aside>
@@ -115,7 +115,7 @@
         <!-- Mobile Header -->
         <header class="md:hidden fixed top-0 w-full h-16 glass-panel border-b border-white/5 flex items-center justify-between px-4 z-30 backdrop-blur-md">
             <h1 class="text-xl font-bold">Nex<span class="text-brand-500">Ticket</span></h1>
-            <button onclick="auth.logout()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-right-from-bracket"></i></button>
+            <button onclick="auth.logout()" class="text-slate-400 hover:text-white" title="ログアウト"><i class="fa-solid fa-right-from-bracket"></i></button>
         </header>
 
         <!-- Content Area -->
@@ -135,7 +135,7 @@
             <header class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                 <div>
                     <h2 class="text-3xl font-bold text-white mb-1">イベント管理</h2>
-                    <p class="text-slate-400">イベントの作成とチケットの発行を行います</p>
+                    <p class="text-slate-400">イベントの作成とチケットの発行・状況確認を行います</p>
                 </div>
                 <button onclick="ui.showModal('modal-create-event')" class="w-full md:w-auto bg-brand-600 hover:bg-brand-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-plus"></i> イベント作成
@@ -188,7 +188,7 @@
         </div>
     </template>
 
-    <!-- SCANNER (Using jsQR) -->
+    <!-- SCANNER -->
     <template id="tmpl-scanner">
         <div class="h-full flex flex-col max-w-lg mx-auto animate-fade-in pb-10">
             <div class="flex items-center justify-between mb-4">
@@ -203,7 +203,6 @@
                 <div class="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
                     <div class="w-64 h-64 border-2 border-brand-500/50 rounded-2xl relative">
                         <div class="absolute top-0 w-full h-0.5 bg-brand-500 shadow-[0_0_15px_#6366f1] animate-scan"></div>
-                        <!-- Corner Markers -->
                         <div class="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-brand-500"></div>
                         <div class="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-brand-500"></div>
                         <div class="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-brand-500"></div>
@@ -343,30 +342,69 @@
         </div>
     </div>
 
+    <!-- MODAL: VIEW EVENT TICKETS (New) -->
+    <div id="modal-view-tickets" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-opacity">
+        <div class="w-full max-w-lg bg-white rounded-2xl p-6 shadow-2xl text-slate-900 animate-fade-in flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
+                <h3 class="text-lg font-bold">発行済みチケット一覧</h3>
+                <button onclick="ui.closeModal('modal-view-tickets')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times"></i></button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-slate-500 uppercase bg-slate-50">
+                        <tr>
+                            <th class="px-4 py-3">座席</th>
+                            <th class="px-4 py-3">コード</th>
+                            <th class="px-4 py-3">所有者</th>
+                            <th class="px-4 py-3">状態</th>
+                        </tr>
+                    </thead>
+                    <tbody id="view-tickets-body" class="divide-y divide-slate-100">
+                        <tr><td colspan="4" class="px-4 py-4 text-center text-slate-400">読み込み中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_URL = 'https://ethimp0.shop/api5.php';
         
         async function apiRequest(action, body = {}) {
             try {
-                const res = await fetch(`${API_URL}?action=${action}`, {
+                // If it's a GET request, append params to URL
+                let url = `${API_URL}?action=${action}`;
+                let options = {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
-                });
+                };
+
+                // Special handling for GET requests if needed, but keeping unified POST for simplicity mostly.
+                // Exception: get_event_tickets was defined as GET in backend
+                if (action === 'get_event_tickets' || action === 'get_events' || action === 'my_tickets') {
+                    // Although we can use POST for everything, let's respect GET if we want.
+                    // For now, keeping POST mostly for consistency except where explicitly GET.
+                    if(action === 'get_event_tickets') {
+                        options.method = 'GET';
+                        delete options.body;
+                        url += `&eventId=${body.eventId}`;
+                    }
+                }
+
+                const res = await fetch(url, options);
                 
                 if (!res.ok) {
                     throw new Error(`Server Error: ${res.status}`);
                 }
 
                 const text = await res.text();
-                // Check if response is valid JSON
                 try {
                     return JSON.parse(text);
                 } catch (e) {
-                    // Try to extract JSON from text if PHP warnings are present
                     const jsonMatch = text.match(/\{.*\}/);
                     if(jsonMatch) return JSON.parse(jsonMatch[0]);
-                    
                     console.error("Raw response:", text);
                     throw new Error("サーバー応答が不正です。");
                 }
@@ -441,13 +479,20 @@
         const app = {
             init: () => {
                 const saved = localStorage.getItem('nex_user_v2');
-                if (saved) currentUser = JSON.parse(saved);
+                if (saved) {
+                    try {
+                        currentUser = JSON.parse(saved);
+                    } catch(e) {
+                        localStorage.removeItem('nex_user_v2');
+                    }
+                }
 
                 if (!currentUser) {
                     document.getElementById('view-auth').classList.remove('hidden');
                     return;
                 }
 
+                // Logged in
                 document.getElementById('view-auth').classList.add('hidden');
                 const layout = document.getElementById('app-layout');
                 layout.classList.remove('hidden');
@@ -481,7 +526,7 @@
                     }
                 } else if (view === 'scanner') {
                     container.appendChild(document.getElementById('tmpl-scanner').content.cloneNode(true));
-                    setTimeout(logic.startScanner, 300); // Slight delay for DOM render
+                    setTimeout(logic.startScanner, 300); 
                 } else if (view === 'ticket-detail') {
                     container.appendChild(document.getElementById('tmpl-ticket-detail').content.cloneNode(true));
                 }
@@ -537,8 +582,14 @@
                     document.getElementById('stats-events').textContent = data.events.length;
                     list.innerHTML = data.events.length ? data.events.map(e => `
                         <div class="p-6 hover:bg-white/5 transition flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group border-b border-white/5 last:border-0">
-                            <div><h4 class="font-bold text-lg text-white group-hover:text-brand-400 transition">${e.eventName}</h4><p class="text-sm text-slate-400 mt-1"><i class="fa-regular fa-clock mr-1"></i> ${e.eventDate || 'TBD'} <span class="mx-2 opacity-50">|</span> <i class="fa-solid fa-location-dot mr-1"></i> ${e.eventLocation || 'Unknown'}</p></div>
-                            <button onclick="logic.openIssueModal('${e.id}')" class="w-full md:w-auto bg-slate-800 border border-slate-600 px-5 py-2.5 rounded-lg text-sm hover:bg-brand-600 hover:border-brand-500 hover:text-white transition font-medium shadow-md"><i class="fa-solid fa-ticket mr-2"></i>発行設定</button>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-lg text-white group-hover:text-brand-400 transition">${e.eventName}</h4>
+                                <p class="text-sm text-slate-400 mt-1"><i class="fa-regular fa-clock mr-1"></i> ${e.eventDate || 'TBD'} <span class="mx-2 opacity-50">|</span> <i class="fa-solid fa-location-dot mr-1"></i> ${e.eventLocation || 'Unknown'}</p>
+                            </div>
+                            <div class="flex gap-2 w-full md:w-auto">
+                                <button onclick="logic.openIssueModal('${e.id}')" class="flex-1 bg-slate-800 border border-slate-600 px-4 py-2 rounded-lg text-sm hover:bg-brand-600 hover:border-brand-500 hover:text-white transition shadow-md"><i class="fa-solid fa-ticket mr-1"></i>発行</button>
+                                <button onclick="logic.loadEventTickets('${e.id}')" class="flex-1 bg-slate-800 border border-slate-600 px-4 py-2 rounded-lg text-sm hover:bg-emerald-600 hover:border-emerald-500 hover:text-white transition shadow-md"><i class="fa-solid fa-list mr-1"></i>確認</button>
+                            </div>
                         </div>`).join('') : '<div class="p-12 text-center text-slate-500">イベントがありません</div>';
                 } catch(e) { list.innerHTML = `<div class="p-8 text-center text-red-400">読み込みエラー<br>${e.message}</div>`; }
             },
@@ -558,6 +609,34 @@
                 document.getElementById('seat-exclude').value = '';
                 document.getElementById('issue-qty').value = '1';
                 ui.showModal('modal-issue-ticket');
+            },
+            loadEventTickets: async (eventId) => {
+                const tbody = document.getElementById('view-tickets-body');
+                ui.showModal('modal-view-tickets');
+                tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-4 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>読み込み中...</td></tr>';
+                
+                try {
+                    const data = await apiRequest('get_event_tickets', { eventId });
+                    if(!data.tickets || data.tickets.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">発行済みのチケットはありません</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.tickets.map(t => {
+                        const statusClass = t.status === 'used' ? 'bg-slate-200 text-slate-500' : 'bg-emerald-100 text-emerald-700';
+                        const statusLabel = t.status === 'used' ? '使用済' : '有効';
+                        return `
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="px-4 py-3 font-bold text-slate-800">${t.seat_number}</td>
+                            <td class="px-4 py-3 font-mono text-xs text-slate-500">${t.claim_code}</td>
+                            <td class="px-4 py-3">
+                                ${t.owner_name ? `<span class="font-medium text-slate-800">${t.owner_name}</span>` : '<span class="text-slate-400 italic">未取得</span>'}
+                            </td>
+                            <td class="px-4 py-3"><span class="px-2 py-1 rounded text-xs font-bold ${statusClass}">${statusLabel}</span></td>
+                        </tr>`;
+                    }).join('');
+                } catch(e) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-red-400">エラー: ${e.message}</td></tr>`;
+                }
             },
             issueRandomTicket: async (e) => {
                 e.preventDefault();
@@ -588,7 +667,6 @@
                     return;
                 }
 
-                // Shuffle
                 for (let i = candidates.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
@@ -643,6 +721,7 @@
             },
             showTicketDetail: (ticket) => {
                 router.navigate('ticket-detail');
+                // Ensure DOM is ready before drawing QR
                 setTimeout(() => {
                     document.getElementById('detail-event').textContent = ticket.event_name;
                     document.getElementById('detail-date').textContent = ticket.event_date || 'TBD';
@@ -655,15 +734,16 @@
                     statusEl.className = ticket.status === 'used' ? "bg-slate-700 p-4 text-center text-sm font-bold text-slate-400 border-t border-slate-600" : "bg-emerald-100 p-4 text-center text-sm font-bold text-emerald-600 border-t border-emerald-200";
 
                     const qrContainer = document.getElementById('qrcode-display');
-                    qrContainer.innerHTML = '';
-                    document.getElementById('qr-error').classList.add('hidden');
-                    try {
-                        new QRCode(qrContainer, {
-                            text: JSON.stringify({ id: ticket.id }),
-                            width: 196, height: 196, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H
-                        });
-                    } catch (err) { document.getElementById('qr-error').classList.remove('hidden'); }
-                }, 100);
+                    if(qrContainer) {
+                        qrContainer.innerHTML = ''; // Clear Previous
+                        try {
+                            new QRCode(qrContainer, {
+                                text: JSON.stringify({ id: ticket.id }),
+                                width: 196, height: 196, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H
+                            });
+                        } catch (err) { console.error("QR Gen Error", err); }
+                    }
+                }, 300); // 300ms delay to ensure transition finishes
             },
             
             // --- jsQR SCANNER LOGIC ---
@@ -686,7 +766,7 @@
                     requestAnimationFrame(tick);
                 }).catch(err => {
                     console.error(err);
-                    resultBox.innerHTML = `<p class="text-red-400 font-bold">カメラ起動エラー<br><span class="text-xs font-normal">HTTPSまたは許可が必要です</span></p>`;
+                    if(resultBox) resultBox.innerHTML = `<p class="text-red-400 font-bold">カメラ起動エラー<br><span class="text-xs font-normal">HTTPSまたは許可が必要です</span></p>`;
                 });
 
                 function tick() {
@@ -718,7 +798,7 @@
                 let id;
                 try { id = JSON.parse(content).id; } 
                 catch(e) { 
-                    setTimeout(() => { scanActive = true; requestAnimationFrame(() => logic.startScanner().tick); }, 1000); 
+                    setTimeout(() => { scanActive = true; if(videoStream) requestAnimationFrame(() => logic.startScanner().tick); }, 1000); 
                     return; 
                 }
                 
@@ -742,38 +822,39 @@
                     el.innerHTML = `<div><i class="fa-solid fa-circle-xmark text-4xl text-red-400 mb-2"></i><h3 class="font-bold text-white">エラー</h3><p class="text-xs text-red-300 mt-1">${e.message}</p></div>`;
                 }
                 
-                // Resume scanning after delay
+                // Resume scanning
                 setTimeout(() => { 
                     scanActive = true; 
                     if(videoStream) {
                         const video = document.getElementById('video');
-                        const canvasElement = document.getElementById('canvas');
-                        const canvas = canvasElement.getContext('2d', { willReadFrequently: true });
-                        const loadingMessage = document.getElementById('loadingMessage');
-                        
-                        function tick() {
-                            if (!scanActive) return;
-                            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                                if(loadingMessage) loadingMessage.hidden = true;
-                                canvasElement.hidden = false;
-                                canvasElement.height = video.videoHeight;
-                                canvasElement.width = video.videoWidth;
-                                canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-                                const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-                                const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
-                                if (code) logic.processScan(code.data);
-                                else requestAnimationFrame(tick);
-                            } else {
-                                requestAnimationFrame(tick);
+                        if(video) {
+                            const canvasElement = document.getElementById('canvas');
+                            const canvas = canvasElement.getContext('2d', { willReadFrequently: true });
+                            
+                            function tick() {
+                                if (!scanActive) return;
+                                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                                    canvasElement.hidden = false;
+                                    canvasElement.height = video.videoHeight;
+                                    canvasElement.width = video.videoWidth;
+                                    canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+                                    const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+                                    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+                                    if (code) logic.processScan(code.data);
+                                    else requestAnimationFrame(tick);
+                                } else {
+                                    requestAnimationFrame(tick);
+                                }
                             }
+                            requestAnimationFrame(tick);
                         }
-                        requestAnimationFrame(tick);
                     }
                 }, 3000);
             }
         };
 
         // --- INIT ---
+        window.addEventListener('load', app.init); // Ensure init runs on load
         document.getElementById('auth-form').addEventListener('submit', auth.submit);
         auth.toggleMode('login');
     </script>
