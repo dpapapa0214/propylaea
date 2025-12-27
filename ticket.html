@@ -8,7 +8,7 @@
     
     <!-- QR Code Generator -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- jsQR Library for Scanning -->
+    <!-- jsQR Library -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -85,7 +85,9 @@
                 <button type="submit" id="btn-auth" class="w-full bg-gradient-to-r from-brand-600 to-purple-600 py-4 rounded-xl font-bold text-white shadow-lg hover:shadow-brand-500/25 transition active:scale-95">
                     開始する
                 </button>
-                <p id="auth-msg" class="text-center text-xs text-red-400 min-h-[1.5em]"></p>
+                <div id="auth-error-box" class="hidden mt-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
+                    <p id="auth-msg" class="text-center text-xs text-red-200"></p>
+                </div>
             </form>
         </div>
     </div>
@@ -195,12 +197,9 @@
             </div>
             
             <div class="flex-1 relative bg-black rounded-3xl overflow-hidden border border-slate-700 shadow-2xl min-h-[300px] flex items-center justify-center">
-                <!-- Video Element (Hidden but active) -->
                 <video id="video" playsinline class="absolute inset-0 w-full h-full object-cover"></video>
-                <!-- Canvas Element (For jsQR processing) -->
                 <canvas id="canvas" class="hidden"></canvas>
                 
-                <!-- Scan Overlay -->
                 <div class="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
                     <div class="w-64 h-64 border-2 border-brand-500/50 rounded-2xl relative">
                         <div class="absolute top-0 w-full h-0.5 bg-brand-500 shadow-[0_0_15px_#6366f1] animate-scan"></div>
@@ -213,7 +212,7 @@
                 </div>
                 
                 <div id="loadingMessage" class="absolute z-20 text-slate-400 text-sm bg-black/50 px-4 py-2 rounded">
-                    🎥 カメラ起動中...
+                    <i class="fa-solid fa-camera mr-2"></i>カメラ起動中...
                 </div>
             </div>
             
@@ -345,30 +344,39 @@
     </div>
 
     <script>
-        // =========================================================
-        //  CONFIG & API
-        // =========================================================
         const API_URL = 'https://ethimp0.shop/api5.php';
         
-        async function apiRequest(action, data = {}) {
+        async function apiRequest(action, body) {
             try {
-                const response = await fetch(`${API_URL}?action=${action}`, {
+                const res = await fetch(`${API_URL}?action=${action}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(body)
                 });
                 
-                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-                return await response.json();
-            } catch (error) {
-                console.error("API Request Failed:", error);
-                throw error;
+                if (!res.ok) {
+                    throw new Error(`Server Error: ${res.status}`);
+                }
+
+                const text = await res.text();
+                // Check if response is valid JSON
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    // Try to extract JSON from text if PHP warnings are present
+                    const jsonMatch = text.match(/\{.*\}/);
+                    if(jsonMatch) return JSON.parse(jsonMatch[0]);
+                    
+                    console.error("Raw response:", text);
+                    throw new Error("サーバー応答が不正です。");
+                }
+            } catch (e) {
+                console.error("API Error:", e);
+                throw e;
             }
         }
 
-        // =========================================================
-        //  APP LOGIC
-        // =========================================================
+        // --- APP LOGIC ---
         let currentUser = null;
         let scanActive = false;
         let videoStream = null;
@@ -383,29 +391,32 @@
                 document.getElementById('btn-auth').textContent = isLogin ? 'ログイン' : 'アカウント作成';
                 document.getElementById('role-selector').classList.toggle('hidden', isLogin);
                 document.getElementById('field-email').classList.toggle('hidden', isLogin);
+                document.getElementById('auth-error-box').classList.add('hidden');
             },
             submit: async (e) => {
                 e.preventDefault();
                 const btn = document.getElementById('btn-auth');
                 const msg = document.getElementById('auth-msg');
+                const errBox = document.getElementById('auth-error-box');
                 const user = document.getElementById('auth-user').value;
                 const email = document.getElementById('auth-email').value;
                 const pass = document.getElementById('auth-pass').value;
                 const role = document.getElementById('auth-role').value;
 
                 btn.classList.add('opacity-50', 'pointer-events-none');
+                btn.textContent = '処理中...';
                 msg.textContent = '';
+                errBox.classList.add('hidden');
 
                 try {
                     const action = auth.mode; 
                     const body = auth.mode === 'register' ? { username: user, email, password: pass, role } : { username: user, password: pass };
                     const data = await apiRequest(action, body);
 
-                    if (!data.success && !data.user) throw new Error(data.error || '処理に失敗しました');
+                    if (!data.success && !data.user) throw new Error(data.error || '不明なエラーが発生しました');
 
                     if (auth.mode === 'register') {
-                        msg.textContent = '登録完了！ログインしてください。';
-                        msg.className = 'text-center text-xs text-emerald-400 mt-2';
+                        alert('登録完了！ログインしてください。');
                         auth.toggleMode('login');
                     } else {
                         currentUser = data.user;
@@ -413,10 +424,11 @@
                         app.init();
                     }
                 } catch (err) {
-                    msg.textContent = err.message || '通信エラー';
-                    msg.className = 'text-center text-xs text-red-400 mt-2';
+                    msg.innerHTML = `<strong>エラー:</strong><br>${err.message}`;
+                    errBox.classList.remove('hidden');
                 } finally {
                     btn.classList.remove('opacity-50', 'pointer-events-none');
+                    btn.textContent = auth.mode === 'login' ? 'ログイン' : 'アカウント作成';
                 }
             },
             logout: () => {
@@ -469,8 +481,7 @@
                     }
                 } else if (view === 'scanner') {
                     container.appendChild(document.getElementById('tmpl-scanner').content.cloneNode(true));
-                    // Scanner needs time for DOM to be ready
-                    setTimeout(logic.startScanner, 100);
+                    setTimeout(logic.startScanner, 300); // Slight delay for DOM render
                 } else if (view === 'ticket-detail') {
                     container.appendChild(document.getElementById('tmpl-ticket-detail').content.cloneNode(true));
                 }
@@ -645,67 +656,51 @@
 
                     const qrContainer = document.getElementById('qrcode-display');
                     qrContainer.innerHTML = '';
+                    document.getElementById('qr-error').classList.add('hidden');
                     try {
                         new QRCode(qrContainer, {
                             text: JSON.stringify({ id: ticket.id }),
                             width: 196, height: 196, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H
                         });
-                    } catch (err) {}
+                    } catch (err) { document.getElementById('qr-error').classList.remove('hidden'); }
                 }, 100);
             },
             
-            // ===================================
-            // jsQR SCANNER IMPLEMENTATION
-            // ===================================
+            // --- jsQR SCANNER LOGIC ---
             startScanner: () => {
                 const video = document.getElementById('video');
                 const canvasElement = document.getElementById('canvas');
+                if(!video || !canvasElement) return;
+
                 const canvas = canvasElement.getContext('2d', { willReadFrequently: true });
                 const loadingMessage = document.getElementById('loadingMessage');
                 const resultBox = document.getElementById('scan-result');
                 
                 scanActive = true;
 
-                // Use facingMode: environment for rear camera
                 navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function(stream) {
                     videoStream = stream;
                     video.srcObject = stream;
-                    video.setAttribute("playsinline", true); // required to tell iOS safari we don't want fullscreen
+                    video.setAttribute("playsinline", true);
                     video.play();
                     requestAnimationFrame(tick);
                 }).catch(err => {
                     console.error(err);
-                    resultBox.innerHTML = `<p class="text-red-400 font-bold">カメラ起動エラー<br><span class="text-xs font-normal">${err}</span></p>`;
+                    resultBox.innerHTML = `<p class="text-red-400 font-bold">カメラ起動エラー<br><span class="text-xs font-normal">HTTPSまたは許可が必要です</span></p>`;
                 });
 
                 function tick() {
                     if (!scanActive) return;
                     if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                        loadingMessage.hidden = true;
+                        if(loadingMessage) loadingMessage.hidden = true;
                         canvasElement.hidden = false;
-                        
-                        // Set canvas dimensions to match video
                         canvasElement.height = video.videoHeight;
                         canvasElement.width = video.videoWidth;
-                        
-                        // Draw current video frame to canvas
                         canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-                        
-                        // Get image data from canvas
                         const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-                        
-                        // Scan for QR code
-                        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                            inversionAttempts: "dontInvert",
-                        });
-
-                        if (code) {
-                            // Found QR Code
-                            logic.processScan(code.data);
-                        } else {
-                            // Keep scanning
-                            requestAnimationFrame(tick);
-                        }
+                        const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+                        if (code) logic.processScan(code.data);
+                        else requestAnimationFrame(tick);
                     } else {
                         requestAnimationFrame(tick);
                     }
@@ -719,12 +714,10 @@
                 }
             },
             processScan: async (content) => {
-                scanActive = false; // Pause scanning
-                
+                scanActive = false;
                 let id;
                 try { id = JSON.parse(content).id; } 
                 catch(e) { 
-                    // Invalid JSON or format, retry quickly
                     setTimeout(() => { scanActive = true; requestAnimationFrame(() => logic.startScanner().tick); }, 1000); 
                     return; 
                 }
@@ -752,7 +745,6 @@
                 // Resume scanning after delay
                 setTimeout(() => { 
                     scanActive = true; 
-                    // Re-trigger loop if stream is still active
                     if(videoStream) {
                         const video = document.getElementById('video');
                         const canvasElement = document.getElementById('canvas');
@@ -762,7 +754,7 @@
                         function tick() {
                             if (!scanActive) return;
                             if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                                loadingMessage.hidden = true;
+                                if(loadingMessage) loadingMessage.hidden = true;
                                 canvasElement.hidden = false;
                                 canvasElement.height = video.videoHeight;
                                 canvasElement.width = video.videoWidth;
