@@ -8,281 +8,553 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             darkMode: ['class', '[data-theme="dark"]'],
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Noto Sans JP', 'sans-serif'], serif: ['Cinzel', 'serif'] },
-                    colors: { gold: { 400: '#D4AF37', 500: '#C5A028', 600: '#B4901E' } }
+                    fontFamily: { 
+                        sans: ['Zen Kaku Gothic New', 'sans-serif'],
+                        serif: ['Cinzel', 'serif'] 
+                    },
+                    colors: {
+                        void: '#030304',
+                        gold: { 300: '#F2D06B', 400: '#D4AF37', 500: '#C5A028', 600: '#B4901E', 900: '#423308' },
+                        ethereal: '#6366f1'
+                    },
+                    backgroundImage: {
+                        'noise': "url('https://www.transparenttextures.com/patterns/stardust.png')",
+                        'gold-gradient': "linear-gradient(135deg, #D4AF37 0%, #F2D06B 40%, #B4901E 100%)",
+                        'glass': "linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%)"
+                    },
+                    boxShadow: {
+                        'glow': '0 0 20px rgba(212, 175, 55, 0.15)',
+                        'glow-lg': '0 0 40px rgba(212, 175, 55, 0.25)'
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-6px)' } }
+                    }
                 }
             }
         }
     </script>
     <style>
         :root {
-            --bg-main: #050505; --text-main: #f1f5f9; --panel-bg: rgba(20, 20, 25, 0.8);
-            --panel-border: rgba(255, 255, 255, 0.08); --input-bg: rgba(0, 0, 0, 0.3);
+            --bg-main: #030304; --text-main: #f8fafc; 
+            --glass-border: rgba(255, 255, 255, 0.08); 
+            --glass-bg: rgba(18, 18, 23, 0.6);
         }
         :root[data-theme="light"] {
-            --bg-main: #f0f2f5; --text-main: #1e293b; --panel-bg: rgba(255, 255, 255, 0.9);
-            --panel-border: rgba(0, 0, 0, 0.05); --input-bg: rgba(255, 255, 255, 0.6);
+            --bg-main: #f2f4f6; --text-main: #1a1c20;
+            --glass-border: rgba(0, 0, 0, 0.05);
+            --glass-bg: rgba(255, 255, 255, 0.8);
         }
-        body { background-color: var(--bg-main); color: var(--text-main); overflow: hidden; transition: background-color 0.5s; }
-        .glass-panel { background: var(--panel-bg); backdrop-filter: blur(20px); border: 1px solid var(--panel-border); }
-        .btn-gold { background: linear-gradient(135deg, #D4AF37, #B4901E); color: #000; }
-        .input-field { background: var(--input-bg); border: 1px solid var(--panel-border); color: var(--text-main); }
+        body { background-color: var(--bg-main); color: var(--text-main); overflow: hidden; transition: background-color 0.5s ease; }
+        
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary {
+            background: var(--bg-main);
+            position: relative; overflow: hidden; transition: all 0.3s ease;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+        }
+        .btn-primary::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), transparent);
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .btn-primary:hover { border-color: #D4AF37; box-shadow: 0 0 15px rgba(212, 175, 55, 0.2); }
+        .btn-primary:hover::before { opacity: 1; }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #D4AF37, #B4901E);
+            color: #000; font-weight: 700; transition: all 0.3s;
+        }
+        .btn-gold:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(212, 175, 55, 0.4); }
+
+        .input-field {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            transition: all 0.3s;
+        }
+        .input-field:focus { border-color: #D4AF37; background: rgba(0, 0, 0, 0.4); box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.2); }
+
         .h-safe-screen { height: 100dvh; }
-        /* Logo SVG Animation */
-        .logo-path { stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw 2s ease-out forwards; }
-        @keyframes draw { to { stroke-dashoffset: 0; } }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(100, 100, 100, 0.3); border-radius: 2px; }
     </style>
 </head>
-<body class="h-safe-screen w-screen flex text-sm md:text-base font-sans">
+<body class="h-safe-screen w-screen flex text-sm md:text-base font-sans bg-noise">
 
-    <!-- SVG LOGO DEFINITION -->
-    <svg class="hidden">
-        <symbol id="icon-propylaea" viewBox="0 0 100 100">
-            <path d="M20 80 L20 20 L80 20 L80 80" fill="none" stroke="currentColor" stroke-width="4" />
-            <path d="M35 80 L35 40 L65 40 L65 80" fill="none" stroke="currentColor" stroke-width="3" />
-            <path d="M10 20 L50 5 L90 20" fill="none" stroke="currentColor" stroke-width="4" />
-            <circle cx="50" cy="30" r="5" fill="currentColor" />
-        </symbol>
-    </svg>
+    <!-- AUTH SCREEN -->
+    <div id="view-auth" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md transition-all duration-700">
+        <!-- Ambient Light -->
+        <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-gold-600/10 rounded-full blur-[120px] animate-pulse-slow pointer-events-none"></div>
 
-    <!-- AUTH -->
-    <div id="view-auth" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-500">
-        <div class="w-full max-w-md p-10 glass-panel rounded-2xl shadow-2xl m-4 flex flex-col max-h-[90vh] overflow-y-auto">
-            <div class="text-center mb-8">
-                <div class="w-20 h-20 mx-auto mb-4 text-gold-400">
-                    <svg class="w-full h-full"><use href="#icon-propylaea"/></svg>
+        <div class="relative w-full max-w-md p-10 glass-panel rounded-2xl flex flex-col max-h-[90dvh] overflow-y-auto shadow-2xl border-t border-white/10">
+            <div class="text-center mb-10 relative">
+                <div class="w-20 h-20 mx-auto mb-6 border border-gold-400/20 rounded-full flex items-center justify-center relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-gold-400/10 scale-0 group-hover:scale-100 transition-transform duration-500 rounded-full"></div>
+                    <i class="fa-solid fa-monument text-3xl text-gold-400 relative z-10"></i>
                 </div>
-                <h1 class="text-4xl font-serif font-bold text-gold-400 mb-2">PROPYLAEA</h1>
-                <p class="text-[10px] tracking-[0.3em] uppercase opacity-70">デジタル神殿への入り口</p>
+                <h1 class="text-4xl font-serif font-bold tracking-[0.2em] text-white mb-2 text-shadow-glow">PROPYLAEA</h1>
+                <p class="text-[10px] tracking-[0.4em] uppercase text-gold-400/80">Sanctuary of Experiences</p>
             </div>
-            <div class="flex bg-black/20 p-1 rounded-lg mb-6">
-                <button onclick="auth.toggleMode('login')" id="tab-login" class="flex-1 py-3 rounded-md font-medium transition text-gold-400 bg-white/10">ログイン</button>
-                <button onclick="auth.toggleMode('register')" id="tab-register" class="flex-1 py-3 rounded-md opacity-50">新規登録</button>
+            
+            <div class="flex bg-black/30 p-1 rounded-lg mb-8 relative z-10">
+                <button onclick="auth.toggleMode('login')" id="tab-login" class="flex-1 py-3 rounded-md font-medium transition text-gold-400 bg-white/5 shadow-sm">ログイン</button>
+                <button onclick="auth.toggleMode('register')" id="tab-register" class="flex-1 py-3 rounded-md font-medium text-slate-500 hover:text-white transition">新規登録</button>
             </div>
-            <form id="auth-form" class="space-y-4">
-                <input type="text" id="auth-user" class="w-full input-field rounded-lg p-4 outline-none" placeholder="ユーザーID" required>
-                <input type="email" id="auth-email" class="w-full input-field rounded-lg p-4 outline-none hidden" placeholder="email@example.com">
-                <input type="password" id="auth-pass" class="w-full input-field rounded-lg p-4 outline-none" placeholder="パスワード" required>
-                <select id="auth-role" class="w-full input-field rounded-lg p-4 outline-none hidden">
-                    <option value="attendee">参加者</option><option value="organizer">主催者</option>
-                </select>
-                <button type="submit" id="btn-auth" class="w-full btn-gold py-4 rounded-lg font-bold shadow-lg">入場する</button>
+
+            <form id="auth-form" class="space-y-5 relative z-10">
+                <div class="space-y-1">
+                    <label class="text-[10px] uppercase tracking-widest text-slate-500 ml-1">ID</label>
+                    <input type="text" id="auth-user" class="w-full input-field rounded-lg p-4 outline-none tracking-wide" placeholder="USERNAME" required>
+                </div>
+                <div id="field-email" class="hidden space-y-1">
+                    <label class="text-[10px] uppercase tracking-widest text-slate-500 ml-1">Email</label>
+                    <input type="email" id="auth-email" class="w-full input-field rounded-lg p-4 outline-none tracking-wide" placeholder="EMAIL ADDRESS">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] uppercase tracking-widest text-slate-500 ml-1">Password</label>
+                    <input type="password" id="auth-pass" class="w-full input-field rounded-lg p-4 outline-none tracking-wide" placeholder="••••••••" required>
+                </div>
+                <div id="role-selector" class="hidden space-y-1">
+                    <label class="text-[10px] uppercase tracking-widest text-slate-500 ml-1">Account Type</label>
+                    <select id="auth-role" class="w-full input-field rounded-lg p-4 outline-none appearance-none cursor-pointer">
+                        <option value="attendee">参加者 (Guest)</option>
+                        <option value="organizer">主催者 (Organizer)</option>
+                    </select>
+                </div>
+
+                <button type="submit" id="btn-auth" class="w-full btn-gold py-4 rounded-lg font-serif font-bold tracking-widest shadow-glow mt-4">
+                    ENTER
+                </button>
                 
-                <div id="auth-error-box" class="hidden text-center bg-red-500/10 border border-red-500/20 p-3 rounded-lg mt-4">
-                    <p id="auth-msg" class="text-xs text-red-400 font-bold"></p>
+                <div id="auth-error-box" class="hidden mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg animate-pulse">
+                    <p id="auth-msg" class="text-center text-xs text-red-400 font-medium"></p>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- MAIN -->
+    <!-- MAIN APP LAYOUT -->
     <div id="app-layout" class="flex w-full h-full hidden opacity-0 transition-opacity duration-1000">
-        <aside class="hidden md:flex flex-col w-72 glass-panel border-r border-r-white/5 z-20">
-            <div class="p-8 border-b border-white/5 flex justify-between items-center">
+        
+        <!-- Sidebar (PC) -->
+        <aside class="hidden md:flex flex-col w-20 lg:w-72 glass-panel border-r border-white/5 z-20 transition-all duration-300">
+            <div class="p-8 border-b border-white/5 flex flex-col lg:flex-row items-center justify-between gap-4">
                 <div class="flex items-center gap-3 text-gold-400">
-                    <svg class="w-8 h-8"><use href="#icon-propylaea"/></svg>
-                    <h1 class="text-lg font-serif font-bold tracking-widest text-white">PROPYLAEA</h1>
+                    <i class="fa-solid fa-monument text-2xl"></i>
+                    <h1 class="hidden lg:block text-lg font-serif font-bold tracking-widest text-white">PROPYLAEA</h1>
                 </div>
-                <button onclick="ui.toggleTheme()"><i class="fa-solid fa-circle-half-stroke opacity-70"></i></button>
             </div>
-            <nav class="flex-1 px-4 py-6 space-y-2" id="sidebar-nav"></nav>
-            <div class="p-6 border-t border-white/5 flex items-center gap-4">
-                <i class="fa-solid fa-user text-gold-400"></i>
-                <span id="sidebar-user" class="truncate flex-1">User</span>
-                <button onclick="auth.logout()" class="hover:text-red-400"><i class="fa-solid fa-power-off"></i></button>
+            
+            <nav class="flex-1 py-8 space-y-2 px-3" id="sidebar-nav"></nav>
+            
+            <div class="p-6 border-t border-white/5 flex flex-col gap-4">
+                <button onclick="ui.toggleTheme()" class="w-full h-10 rounded-lg hover:bg-white/5 flex items-center justify-center text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-circle-half-stroke"></i>
+                </button>
+                <div class="flex items-center gap-3 px-3 py-3 rounded-xl bg-white/5 border border-white/5 overflow-hidden">
+                    <div class="w-8 h-8 shrink-0 rounded-full bg-gradient-to-tr from-gold-600 to-gold-400 flex items-center justify-center text-black font-bold text-xs shadow-lg">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div class="hidden lg:block flex-1 truncate">
+                        <p class="text-xs font-bold text-white truncate" id="sidebar-user">User</p>
+                    </div>
+                    <button onclick="auth.logout()" class="hidden lg:block opacity-50 hover:opacity-100 hover:text-red-400 transition"><i class="fa-solid fa-power-off"></i></button>
+                </div>
             </div>
         </aside>
 
-        <main class="flex-1 relative overflow-hidden w-full pt-16 md:pt-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]">
-            <header class="md:hidden fixed top-0 w-full h-16 glass-panel flex items-center justify-between px-6 z-30">
-                <div class="flex items-center gap-2 text-gold-400">
-                    <svg class="w-6 h-6"><use href="#icon-propylaea"/></svg>
-                    <h1 class="text-lg font-serif font-bold text-white">PROPYLAEA</h1>
-                </div>
-                <div class="flex gap-4">
-                    <button onclick="ui.toggleTheme()"><i class="fa-solid fa-circle-half-stroke"></i></button>
-                    <button onclick="auth.logout()"><i class="fa-solid fa-right-from-bracket"></i></button>
-                </div>
-            </header>
-            <div id="content-container" class="h-full overflow-y-auto p-4 md:p-10 space-y-8 scroll-smooth pb-32"></div>
+        <!-- Header (Mobile) -->
+        <header class="md:hidden fixed top-0 w-full h-16 glass-panel flex items-center justify-between px-6 z-30 border-b border-white/5 backdrop-blur-xl">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-monument text-gold-400"></i>
+                <h1 class="text-lg font-serif font-bold tracking-widest">PROPYLAEA</h1>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="ui.toggleTheme()"><i class="fa-solid fa-circle-half-stroke opacity-70"></i></button>
+                <button onclick="auth.logout()"><i class="fa-solid fa-right-from-bracket opacity-70"></i></button>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <main class="flex-1 relative overflow-hidden w-full pt-16 md:pt-0 bg-noise">
+            <!-- Decorative BG -->
+            <div class="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-purple-900/10 rounded-full blur-[150px] pointer-events-none"></div>
+            <div class="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-gold-900/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+            <div id="content-container" class="h-full overflow-y-auto p-4 md:p-10 space-y-10 scroll-smooth pb-32 relative z-10"></div>
         </main>
-        <nav class="md:hidden fixed bottom-0 w-full h-20 glass-panel flex justify-around items-center z-30 pb-4" id="mobile-nav"></nav>
+        
+        <!-- Nav (Mobile) -->
+        <nav class="md:hidden fixed bottom-0 w-full h-20 glass-panel border-t border-white/5 flex justify-around items-center z-30 pb-4 backdrop-blur-xl" id="mobile-nav"></nav>
     </div>
 
     <!-- TEMPLATES -->
+
+    <!-- ORGANIZER DASHBOARD -->
     <template id="tmpl-organizer">
-        <header class="flex justify-between items-end border-b border-white/10 pb-6">
-            <h2 class="text-3xl font-serif font-bold">イベント管理</h2>
-            <button onclick="ui.showModal('modal-create-event')" class="btn-gold px-6 py-3 rounded-lg font-bold text-sm shadow-lg"><i class="fa-solid fa-plus mr-2"></i>作成</button>
-        </header>
-        <div class="grid grid-cols-2 gap-4">
-            <div class="glass-panel p-6 rounded-xl"><p class="text-xs opacity-50 uppercase">Events</p><h3 class="text-4xl font-serif" id="stats-events">-</h3></div>
-            <div onclick="router.go('scanner')" class="glass-panel p-6 rounded-xl cursor-pointer hover:border-gold-500/50"><p class="text-xs opacity-50 uppercase">Scanner</p><h3 class="text-2xl font-serif">起動</h3></div>
-        </div>
-        <div class="glass-panel rounded-xl p-4">
-            <h3 class="font-bold mb-4 ml-2">開催中のイベント</h3>
-            <div id="org-event-list" class="space-y-4"></div>
-        </div>
-    </template>
+        <div class="max-w-7xl mx-auto space-y-12 animate-[float_0.5s_ease-out]">
+            <header class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pb-6 border-b border-white/5">
+                <div>
+                    <p class="text-gold-400 text-xs font-serif tracking-[0.3em] mb-2">COMMAND CENTER</p>
+                    <h2 class="text-4xl md:text-5xl font-serif font-bold text-white tracking-tight">Dashboard</h2>
+                </div>
+                <button onclick="ui.showModal('modal-create-event')" class="btn-gold px-8 py-4 rounded-xl font-bold text-xs tracking-widest shadow-glow flex items-center gap-3">
+                    <i class="fa-solid fa-plus"></i> <span class="pt-0.5">NEW EVENT</span>
+                </button>
+            </header>
 
-    <template id="tmpl-event-detail">
-        <header class="flex items-center gap-4 border-b border-white/10 pb-4">
-            <button onclick="router.back()" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
-            <div><p class="text-[10px] text-gold-400 tracking-widest">DETAIL</p><h2 class="text-2xl font-serif font-bold" id="detail-page-title"></h2></div>
-        </header>
-        <div class="flex flex-col md:flex-row gap-6 h-full">
-            <div class="md:w-1/3 glass-panel p-6 rounded-xl h-fit space-y-4 relative overflow-hidden">
-                <!-- Background Image -->
-                <div id="detail-bg-image" class="absolute inset-0 bg-cover bg-center opacity-20 z-0"></div>
-                <div class="relative z-10 space-y-4">
-                    <div><p class="text-xs opacity-50">Date</p><p class="text-lg" id="detail-page-date"></p></div>
-                    <div><p class="text-xs opacity-50">Location</p><p class="text-lg" id="detail-page-loc"></p></div>
-                    <div class="bg-black/20 p-3 rounded border border-white/5">
-                        <p class="text-xs opacity-50">Configuration</p>
-                        <p class="text-sm font-bold mt-1" id="detail-config-info">-</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Stats Card -->
+                <div class="glass-panel p-8 rounded-2xl relative overflow-hidden group border-l-2 border-l-gold-500">
+                    <div class="absolute right-0 top-0 w-32 h-32 bg-gold-500/5 rounded-bl-full transition group-hover:bg-gold-500/10"></div>
+                    <p class="text-slate-400 text-xs uppercase tracking-widest mb-4 font-bold">Total Events</p>
+                    <h3 class="text-6xl font-serif font-bold text-white group-hover:text-gold-400 transition" id="stats-events">-</h3>
+                </div>
+                <!-- Scanner Card -->
+                <div onclick="router.go('scanner')" class="glass-panel p-8 rounded-2xl cursor-pointer hover:border-ethereal/50 transition group relative overflow-hidden border-l-2 border-l-ethereal">
+                    <div class="absolute right-0 top-0 w-32 h-32 bg-ethereal/5 rounded-bl-full transition group-hover:bg-ethereal/10"></div>
+                    <div class="flex justify-between items-end h-full">
+                        <div>
+                            <p class="text-ethereal text-xs uppercase tracking-widest mb-2 font-bold">Gate Access</p>
+                            <h3 class="text-2xl font-serif font-bold text-white">Scanner Launch</h3>
+                        </div>
+                        <i class="fa-solid fa-expand text-4xl text-slate-700 group-hover:text-ethereal transition-transform group-hover:scale-110"></i>
                     </div>
-                    <button onclick="logic.openIssueModal()" class="w-full btn-gold py-3 rounded-lg font-bold shadow-lg mt-4">チケット発行</button>
                 </div>
             </div>
-            <div class="flex-1 glass-panel rounded-xl overflow-hidden flex flex-col min-h-[400px]">
-                <div class="p-4 bg-white/5 flex justify-between items-center"><h3 class="font-bold">発行済みチケット</h3><button onclick="logic.loadEventDetail()"><i class="fa-solid fa-rotate-right"></i></button></div>
-                <div class="overflow-auto flex-1"><table class="w-full text-left text-sm"><thead class="bg-black/20 text-xs opacity-70"><tr><th class="px-4 py-3">座席</th><th class="px-4 py-3">コード</th><th class="px-4 py-3">所有者</th><th class="px-4 py-3 text-right">通知</th></tr></thead><tbody id="detail-ticket-list" class="divide-y divide-white/5"></tbody></table></div>
+
+            <!-- Event List -->
+            <div class="space-y-6">
+                <div class="flex items-center gap-4">
+                    <h3 class="font-serif font-bold text-xl text-white tracking-wide">Active Events</h3>
+                    <div class="h-px flex-1 bg-white/10"></div>
+                </div>
+                <div id="org-event-list" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
             </div>
         </div>
     </template>
 
+    <!-- EVENT DETAIL -->
+    <template id="tmpl-event-detail">
+        <div class="max-w-7xl mx-auto space-y-8 animate-fade-in pb-20">
+            <!-- Header Image Banner -->
+            <div class="relative w-full h-48 md:h-64 rounded-3xl overflow-hidden shadow-2xl border border-white/5">
+                <div id="detail-hero-img" class="absolute inset-0 bg-cover bg-center transition-transform duration-1000 hover:scale-105"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
+                <div class="absolute bottom-0 left-0 w-full p-6 md:p-10 flex flex-col md:flex-row justify-between items-end gap-4">
+                    <div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <button onclick="router.back()" class="w-8 h-8 rounded-full bg-white/10 backdrop-blur flex items-center justify-center hover:bg-white/20 transition text-white"><i class="fa-solid fa-arrow-left text-sm"></i></button>
+                            <p class="text-gold-400 text-xs font-serif tracking-[0.2em] font-bold">EVENT DETAIL</p>
+                        </div>
+                        <h2 class="text-3xl md:text-5xl font-serif font-bold text-white tracking-tight leading-none" id="detail-page-title">Loading...</h2>
+                    </div>
+                    <div class="flex gap-4 text-xs font-mono text-slate-300">
+                        <span class="bg-black/40 backdrop-blur border border-white/10 px-3 py-1.5 rounded"><i class="fa-regular fa-clock mr-2 text-gold-400"></i><span id="detail-page-date">-</span></span>
+                        <span class="bg-black/40 backdrop-blur border border-white/10 px-3 py-1.5 rounded"><i class="fa-solid fa-location-dot mr-2 text-gold-400"></i><span id="detail-page-loc">-</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-8">
+                <!-- Control Panel -->
+                <div class="w-full lg:w-80 space-y-6 shrink-0">
+                    <div class="glass-panel p-6 rounded-2xl space-y-4">
+                        <div class="flex justify-between items-center pb-4 border-b border-white/5">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Status</span>
+                            <span class="text-emerald-400 text-xs font-bold bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">ACTIVE</span>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Configuration</p>
+                            <p class="text-sm font-bold text-white" id="detail-config-info">-</p>
+                        </div>
+                        <button onclick="logic.openIssueModal()" class="w-full btn-gold py-4 rounded-xl font-bold shadow-lg text-xs tracking-widest">
+                            <i class="fa-solid fa-ticket mr-2"></i>ISSUE TICKETS
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Ticket List -->
+                <div class="flex-1 glass-panel rounded-2xl overflow-hidden flex flex-col min-h-[500px]">
+                    <div class="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
+                        <h3 class="font-serif font-bold text-white tracking-wide">Issued Tickets <span id="detail-count" class="ml-2 text-xs text-slate-400 bg-black/30 px-2 py-0.5 rounded-full border border-white/5">0</span></h3>
+                        <button onclick="logic.loadEventDetail(router.params)" class="text-xs text-slate-400 hover:text-white transition flex items-center gap-1"><i class="fa-solid fa-rotate-right"></i> REFRESH</button>
+                    </div>
+                    <div class="overflow-auto flex-1 custom-scrollbar p-2">
+                        <table class="w-full text-left text-sm border-collapse">
+                            <thead class="text-[10px] text-slate-500 uppercase font-bold tracking-wider sticky top-0 bg-[#121217] z-10">
+                                <tr>
+                                    <th class="px-4 py-3 rounded-l-lg">Seat</th>
+                                    <th class="px-4 py-3">Code</th>
+                                    <th class="px-4 py-3">Owner</th>
+                                    <th class="px-4 py-3">Status</th>
+                                    <th class="px-4 py-3 rounded-r-lg text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detail-ticket-list" class="divide-y divide-white/5 text-slate-300 font-mono text-xs"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- ATTENDEE DASHBOARD -->
     <template id="tmpl-attendee">
-        <header class="text-center py-8"><h2 class="text-3xl font-serif font-bold">マイチケット</h2></header>
-        <div class="glass-panel p-6 rounded-xl border border-gold-500/30 flex gap-2">
-            <input type="text" id="claim-code-input" placeholder="コードを入力" class="flex-1 input-field rounded-lg px-4 outline-none">
-            <button onclick="logic.claimTicket()" class="btn-gold px-6 rounded-lg font-bold">受取</button>
+        <div class="max-w-3xl mx-auto space-y-10 animate-[float_0.5s_ease-out] pb-32">
+            <header class="text-center pt-8">
+                <div class="inline-block p-1 rounded-full border border-gold-400/30 mb-4">
+                    <div class="w-12 h-12 rounded-full bg-gold-400/10 flex items-center justify-center text-gold-400"><i class="fa-solid fa-wallet text-xl"></i></div>
+                </div>
+                <h2 class="text-3xl font-serif font-bold text-white tracking-widest">MY VAULT</h2>
+            </header>
+
+            <!-- Claim Input -->
+            <div class="glass-panel p-1 rounded-2xl border border-gold-500/30 bg-gradient-to-br from-gold-500/10 to-transparent shadow-glow relative">
+                <form onsubmit="logic.claimTicket(event)" class="flex gap-2 p-4 bg-black/40 rounded-xl backdrop-blur-sm">
+                    <div class="flex-1 relative">
+                        <i class="fa-solid fa-key absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                        <input type="text" id="claim-code-input" placeholder="ENTER TICKET CODE" class="w-full bg-transparent border-none text-white font-mono text-lg tracking-[0.2em] outline-none pl-10 placeholder-slate-700 uppercase" required maxlength="16">
+                    </div>
+                    <button type="submit" class="bg-gold-400 hover:bg-gold-300 text-black px-6 rounded-lg font-bold transition shadow-lg"><i class="fa-solid fa-arrow-right"></i></button>
+                </form>
+            </div>
+            
+            <div id="my-ticket-list" class="space-y-6"></div>
         </div>
-        <div id="my-ticket-list" class="space-y-4 mt-6 pb-20"></div>
     </template>
 
+    <!-- TICKET DETAIL (Digital Twin) -->
     <template id="tmpl-ticket-detail">
-        <div class="max-w-md mx-auto relative pb-20">
-            <button onclick="router.back()" class="absolute top-4 left-4 z-10 bg-black/50 px-3 py-1 rounded-full text-white text-xs">BACK</button>
-            <!-- Added pb-12 to ensure bottom part is visible -->
-            <div class="bg-gray-200 text-slate-900 rounded-3xl overflow-hidden shadow-2xl pb-12 relative"> 
-                <div id="ticket-bg-image" class="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none"></div>
-                <div class="bg-black p-8 text-white text-center relative">
-                    <h2 class="text-2xl font-serif font-bold relative z-10 break-words" id="detail-event">EVENT</h2>
-                    <div class="mt-4 text-xs text-slate-400 flex justify-center gap-4"><span id="detail-date">DATE</span><span id="detail-loc">LOC</span></div>
+        <div class="max-w-sm mx-auto relative pb-20 pt-10 perspective-1000">
+            <button onclick="router.back()" class="absolute top-0 left-0 z-20 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full backdrop-blur border border-white/10 transition text-white text-[10px] font-bold tracking-widest flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left"></i> BACK
+            </button>
+            
+            <!-- Ticket Card -->
+            <div class="relative w-full bg-[#E0E0E0] rounded-[2rem] overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] transform transition duration-500 hover:rotate-1">
+                <!-- Holographic Strip -->
+                <div class="absolute top-0 right-10 w-24 h-full bg-gradient-to-b from-yellow-300 via-yellow-500 to-yellow-700 opacity-20 mix-blend-color-burn z-10 pointer-events-none"></div>
+                
+                <!-- Event Header (Black Section) -->
+                <div class="bg-[#0A0A0A] p-10 text-white text-center relative overflow-hidden h-72 flex flex-col justify-center items-center">
+                    <div id="ticket-img-bg" class="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] to-transparent"></div>
+                    
+                    <div class="relative z-10 w-full">
+                        <p class="text-gold-400 text-[9px] font-serif tracking-[0.4em] mb-4 uppercase border border-gold-400/30 inline-block px-3 py-1 rounded-full">Official Pass</p>
+                        <h2 class="text-3xl font-serif font-black uppercase tracking-widest leading-none mb-6 text-shadow-lg break-words" id="detail-event">EVENT NAME</h2>
+                        <div class="flex justify-center gap-4 text-[10px] font-mono text-slate-300 tracking-wider">
+                            <span class="flex items-center gap-2 bg-white/10 px-3 py-1 rounded"><i class="fa-regular fa-clock"></i> <span id="detail-date">DATE</span></span>
+                        </div>
+                        <div class="mt-2 text-[10px] font-mono text-slate-400 flex justify-center items-center gap-2">
+                            <i class="fa-solid fa-location-dot"></i> <span id="detail-loc">LOCATION</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="p-8 flex flex-col items-center relative z-10">
-                    <p class="text-xs font-bold text-slate-400 tracking-widest mb-1">SEAT</p>
-                    <p class="text-4xl font-serif font-bold mb-6" id="detail-seat">-</p>
-                    <div class="bg-white p-2 rounded-xl mb-4 shadow-inner"><div id="qrcode-display"></div></div>
-                    <p class="text-xs font-mono text-slate-400 select-all" id="detail-id">ID</p>
+                
+                <!-- Ticket Info (White Section) -->
+                <div class="p-8 pb-12 flex flex-col items-center bg-[#E0E0E0] relative">
+                    <!-- Cutout Notches -->
+                    <div class="absolute -left-4 top-[-1.5rem] w-8 h-8 bg-[#030304] rounded-full"></div>
+                    <div class="absolute -right-4 top-[-1.5rem] w-8 h-8 bg-[#030304] rounded-full"></div>
+                    <div class="absolute left-6 right-6 top-[-1px] border-t-2 border-dashed border-gray-400/50"></div>
+
+                    <div class="text-center mb-8 mt-4 w-full">
+                        <p class="text-gray-500 text-[9px] uppercase font-bold tracking-[0.4em] mb-2">Seat Assignment</p>
+                        <p class="text-4xl font-serif font-black text-gray-900 tracking-tighter" id="detail-seat">-</p>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-2xl shadow-inner border border-gray-200 mb-6">
+                        <div id="qrcode-display" class="mix-blend-multiply opacity-90"></div>
+                    </div>
+                    
+                    <div class="w-full text-center border-t border-gray-300 pt-4">
+                        <p class="text-[9px] text-gray-400 font-mono uppercase tracking-widest mb-1">Ticket ID</p>
+                        <p class="text-[10px] text-gray-600 font-mono select-all" id="detail-id">ID</p>
+                    </div>
                 </div>
-                <div id="detail-status" class="bg-slate-300 p-4 text-center text-xs font-bold tracking-widest relative z-10">VALID</div>
+                
+                <div id="detail-status" class="bg-gray-300 p-4 text-center text-[10px] font-bold text-gray-600 border-t border-gray-400 tracking-[0.3em] uppercase">Checking...</div>
             </div>
         </div>
     </template>
 
+    <!-- SCANNER -->
     <template id="tmpl-scanner">
-        <div class="max-w-md mx-auto h-full flex flex-col">
-            <button onclick="router.back()" class="mb-4 w-8 h-8 bg-white/10 rounded-full flex items-center justify-center"><i class="fa-solid fa-times"></i></button>
-            <div class="flex-1 bg-black rounded-3xl overflow-hidden relative border border-white/10 min-h-[300px] flex items-center justify-center">
-                <video id="video" autoplay muted playsinline class="absolute inset-0 w-full h-full object-cover"></video>
-                <canvas id="canvas" class="hidden"></canvas>
-                <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10"><div id="scan-frame" class="w-64 h-64 border-2 border-gold-400/50 rounded-2xl relative"><div class="absolute top-0 w-full h-0.5 bg-gold-400 animate-[scan_2s_infinite]"></div></div></div>
+        <div class="max-w-md mx-auto h-full flex flex-col pt-10">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-serif font-bold tracking-widest text-white">GATE SCANNER</h2>
+                <button onclick="router.back()" class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition"><i class="fa-solid fa-times"></i></button>
             </div>
-            <div id="scan-result" class="mt-4 min-h-[100px] glass-panel rounded-2xl p-4 flex items-center justify-center text-center"><p class="text-xs opacity-50">QRをスキャン</p></div>
+            
+            <div class="flex-1 relative bg-black rounded-[2rem] overflow-hidden border border-white/20 shadow-2xl min-h-[400px] flex items-center justify-center group">
+                <video id="video" autoplay muted playsinline class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition duration-500"></video>
+                <canvas id="canvas" class="hidden"></canvas>
+                
+                <!-- HUD Overlay -->
+                <div class="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
+                    <div id="scan-frame" class="w-64 h-64 border-2 border-white/30 rounded-3xl relative transition-all duration-300">
+                        <div id="scan-line" class="absolute top-0 w-full h-0.5 bg-gold-400 shadow-[0_0_20px_#D4AF37] animate-scan"></div>
+                        <!-- Corners -->
+                        <div class="absolute top-0 left-0 w-6 h-6 border-l-2 border-t-2 border-gold-400 rounded-tl-lg"></div>
+                        <div class="absolute top-0 right-0 w-6 h-6 border-r-2 border-t-2 border-gold-400 rounded-tr-lg"></div>
+                        <div class="absolute bottom-0 left-0 w-6 h-6 border-l-2 border-b-2 border-gold-400 rounded-bl-lg"></div>
+                        <div class="absolute bottom-0 right-0 w-6 h-6 border-r-2 border-b-2 border-gold-400 rounded-br-lg"></div>
+                    </div>
+                </div>
+                <div id="loadingMessage" class="absolute z-20 text-white/70 text-[10px] font-mono bg-black/60 px-4 py-1 rounded-full border border-white/10 backdrop-blur">INITIALIZING SENSORS...</div>
+            </div>
+            
+            <div id="scan-result" class="mt-8 min-h-[100px] glass-panel rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all duration-300">
+                <p class="text-slate-500 text-xs font-mono tracking-widest">READY TO SCAN</p>
+            </div>
         </div>
         <style>@keyframes scan { 0% {top:0;opacity:0} 10% {opacity:1} 90% {opacity:1} 100% {top:100%;opacity:0} }</style>
     </template>
 
     <!-- MODALS -->
     <!-- Create Event Modal -->
-    <div id="modal-create-event" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
-        <div class="w-full max-w-md glass-panel rounded-2xl p-8 shadow-2xl my-auto">
-            <h3 class="text-xl font-bold mb-6">新規イベント作成</h3>
-            <form onsubmit="logic.createEvent(event)" class="space-y-4">
+    <div id="modal-create-event" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-md p-4 transition-opacity duration-300">
+        <div class="w-full max-w-md glass-panel rounded-2xl p-8 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-gold-500 to-transparent"></div>
+            <h3 class="text-2xl font-serif font-bold mb-6 tracking-wide text-white">Create Event</h3>
+            <form onsubmit="logic.createEvent(event)" class="space-y-5">
+                <!-- Image Upload (Base64) -->
+                <div class="relative group cursor-pointer" onclick="document.getElementById('evt-img-file').click()">
+                    <div id="img-preview" class="w-full h-32 bg-black/30 border border-white/10 border-dashed rounded-lg flex flex-col items-center justify-center text-slate-500 group-hover:border-gold-400/50 group-hover:text-gold-400 transition bg-cover bg-center">
+                        <i class="fa-regular fa-image text-2xl mb-2"></i>
+                        <span class="text-[10px] uppercase tracking-widest">Upload Cover Image</span>
+                    </div>
+                    <input type="file" id="evt-img-file" accept="image/*" class="hidden" onchange="logic.handleImageUpload(this)">
+                </div>
+
                 <input type="text" id="new-evt-name" placeholder="イベント名" class="w-full input-field rounded-lg p-3 outline-none" required>
-                <input type="date" id="new-evt-date" class="w-full input-field rounded-lg p-3 outline-none">
-                <input type="text" id="new-evt-loc" placeholder="開催場所" class="w-full input-field rounded-lg p-3 outline-none">
-                <input type="url" id="new-evt-img" placeholder="画像URL (任意)" class="w-full input-field rounded-lg p-3 outline-none text-xs">
+                <div class="flex gap-3">
+                    <input type="date" id="new-evt-date" class="flex-1 input-field rounded-lg p-3 outline-none text-xs">
+                    <input type="text" id="new-evt-loc" placeholder="開催場所" class="flex-1 input-field rounded-lg p-3 outline-none">
+                </div>
                 
-                <div class="p-4 bg-white/5 rounded-lg border border-white/5 space-y-3">
-                    <p class="text-xs text-gold-400 font-bold uppercase mb-2">座席タイプ</p>
-                    <div class="flex gap-4 mb-2">
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="seatType" value="designated" checked onchange="ui.toggleCreateSeatConfig()" class="accent-gold-400"> 指定席</label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="seatType" value="free" onchange="ui.toggleCreateSeatConfig()" class="accent-gold-400"> 自由席</label>
+                <div class="p-4 bg-white/5 rounded-lg border border-white/5 space-y-4">
+                    <p class="text-[10px] text-gold-400 font-bold uppercase tracking-widest mb-1">SEAT TYPE</p>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300"><input type="radio" name="seatType" value="designated" checked onchange="ui.toggleCreateSeatConfig()" class="accent-gold-400"> 指定席</label>
+                        <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300"><input type="radio" name="seatType" value="free" onchange="ui.toggleCreateSeatConfig()" class="accent-gold-400"> 自由席</label>
                     </div>
 
                     <!-- Designated Config -->
-                    <div id="conf-designated" class="space-y-2">
-                        <div class="flex gap-2">
-                            <select id="conf-row-start" class="flex-1 input-field rounded p-2 text-center"></select> <span class="opacity-50">-</span> <select id="conf-row-end" class="flex-1 input-field rounded p-2 text-center"></select>
+                    <div id="conf-designated" class="space-y-3 pt-2 border-t border-white/5">
+                        <div class="flex gap-2 items-center">
+                            <span class="text-xs text-slate-500 w-8">Rows</span>
+                            <select id="conf-row-start" class="flex-1 input-field rounded p-1.5 text-center text-xs"></select> <span class="opacity-30">-</span> <select id="conf-row-end" class="flex-1 input-field rounded p-1.5 text-center text-xs"></select>
                         </div>
-                        <div class="flex gap-2">
-                            <input type="number" id="conf-col-max" value="20" class="flex-1 input-field rounded p-2 text-center" placeholder="列数"> <span class="text-xs opacity-50 self-center">列まで</span>
+                        <div class="flex gap-2 items-center">
+                            <span class="text-xs text-slate-500 w-8">Cols</span>
+                            <input type="number" id="conf-col-max" value="20" class="flex-1 input-field rounded p-1.5 text-center text-xs" placeholder="Max">
                         </div>
                     </div>
 
                     <!-- Free Seat Config -->
-                    <div id="conf-free" class="hidden space-y-2">
+                    <div id="conf-free" class="hidden space-y-3 pt-2 border-t border-white/5">
                         <div class="flex items-center gap-2">
-                            <span class="text-xs">定員(枚数上限):</span>
-                            <input type="number" id="conf-capacity" value="100" class="flex-1 input-field rounded p-2 text-center" placeholder="定員">
+                            <span class="text-xs text-slate-500">Max Capacity:</span>
+                            <input type="number" id="conf-capacity" value="100" class="flex-1 input-field rounded p-1.5 text-center text-xs" placeholder="Limit">
                         </div>
                     </div>
                 </div>
                 
-                <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="new-evt-public" class="accent-gold-400"> ストアに公開する</label>
-                <div class="flex gap-2 pt-2"><button type="button" onclick="ui.closeModal('modal-create-event')" class="flex-1 py-3 opacity-50">キャンセル</button><button type="submit" class="flex-1 btn-gold py-3 rounded-lg font-bold">作成</button></div>
+                <label class="flex items-center gap-2 text-xs text-slate-400 cursor-pointer hover:text-white transition"><input type="checkbox" id="new-evt-public" class="accent-gold-400 rounded"> PROPYLAEA STOREに公開する</label>
+                <div class="flex gap-2 pt-2"><button type="button" onclick="ui.closeModal('modal-create-event')" class="flex-1 py-3 opacity-50 hover:opacity-100 transition uppercase text-xs tracking-widest">Cancel</button><button type="submit" class="flex-1 btn-gold py-3 rounded-lg font-bold shadow-lg uppercase text-xs tracking-widest">Create</button></div>
             </form>
         </div>
     </div>
 
     <!-- Issue Ticket Modal -->
-    <div id="modal-issue-ticket" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div id="modal-issue-ticket" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-opacity duration-300">
         <div class="w-full max-w-md glass-panel rounded-2xl p-8 shadow-2xl">
-            <h3 class="text-xl font-bold mb-1">チケット発行</h3>
-            <p class="text-xs opacity-50 mb-4" id="issue-modal-desc">設定</p>
-            <form onsubmit="logic.issueTicket(event)" class="space-y-4">
-                <div class="bg-white/5 p-4 rounded-xl border border-white/5 flex justify-between items-center">
-                    <label class="text-xs font-bold text-gold-400">発行枚数</label>
-                    <div class="flex items-center gap-2"><input type="number" id="issue-qty" value="1" min="1" max="50" class="w-16 input-field rounded p-2 text-center font-bold outline-none"> <span class="text-xs">枚</span></div>
+            <h3 class="text-xl font-serif font-bold mb-1 text-white">Issue Tickets</h3>
+            <p class="text-[10px] opacity-50 mb-6 font-mono uppercase tracking-wider" id="issue-modal-desc">Configure parameters</p>
+            <form onsubmit="logic.issueTicket(event)" class="space-y-5">
+                <input type="hidden" id="issue-event-id">
+                
+                <div class="bg-black/20 p-4 rounded-xl border border-white/5 flex justify-between items-center">
+                    <label class="text-[10px] text-gold-400 font-bold uppercase tracking-widest">Quantity</label>
+                    <div class="flex items-center gap-2"><input type="number" id="issue-qty" value="1" min="1" max="50" class="w-16 input-field rounded p-2 text-center font-bold outline-none font-mono text-lg"> <span class="text-xs opacity-50">TICKETS</span></div>
                 </div>
                 
                 <div id="issue-designated-opts" class="hidden space-y-4">
-                    <div class="flex gap-2 text-sm">
-                        <div class="flex-1">
-                            <label class="text-xs opacity-50 block mb-1">行</label>
-                            <div class="flex gap-1"><select id="issue-row-s" class="input-field rounded w-full"></select>-<select id="issue-row-e" class="input-field rounded w-full"></select></div>
+                    <div class="flex gap-3">
+                        <div class="flex-1 bg-white/5 p-3 rounded-lg border border-white/5">
+                            <label class="text-[10px] opacity-50 block mb-1 uppercase text-center">Row Range</label>
+                            <div class="flex gap-1"><select id="issue-row-s" class="input-field rounded w-full text-center text-xs p-1"></select><span class="opacity-30">-</span><select id="issue-row-e" class="input-field rounded w-full text-center text-xs p-1"></select></div>
                         </div>
-                        <div class="flex-1">
-                            <label class="text-xs opacity-50 block mb-1">列</label>
-                            <div class="flex gap-1"><input type="number" id="issue-col-s" value="1" class="input-field rounded w-full p-1 text-center">-<input type="number" id="issue-col-e" value="10" class="input-field rounded w-full p-1 text-center"></div>
+                        <div class="flex-1 bg-white/5 p-3 rounded-lg border border-white/5">
+                            <label class="text-[10px] opacity-50 block mb-1 uppercase text-center">Col Range</label>
+                            <div class="flex gap-1"><input type="number" id="issue-col-s" value="1" class="input-field rounded w-full p-1 text-center text-xs"><span class="opacity-30">-</span><input type="number" id="issue-col-e" value="10" class="input-field rounded w-full p-1 text-center text-xs"></div>
                         </div>
                     </div>
                     <div>
-                        <label class="text-xs opacity-50 block mb-1">除外座席 (カンマ区切り)</label>
-                        <input type="text" id="issue-exclude" class="w-full input-field rounded p-2 text-sm" placeholder="A-1, B-5">
+                        <label class="text-[10px] opacity-50 block mb-2 uppercase tracking-widest">Exclude (e.g. A-1, B-5)</label>
+                        <input type="text" id="issue-exclude" class="w-full input-field rounded-lg p-3 text-sm font-mono placeholder-slate-700 outline-none">
                     </div>
                 </div>
 
-                <div id="issue-limit-info" class="text-xs text-right opacity-70"></div>
+                <div id="issue-limit-info" class="text-[10px] text-right text-gold-400/80 font-mono tracking-wider"></div>
 
-                <button type="submit" class="w-full btn-gold py-3 rounded-lg font-bold shadow-lg">発行する</button>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="ui.closeModal('modal-issue-ticket')" class="flex-1 py-3 opacity-50 hover:opacity-100 transition uppercase text-xs tracking-widest">Cancel</button>
+                    <button type="submit" class="flex-1 btn-gold py-3 rounded-lg font-bold shadow-lg uppercase text-xs tracking-widest">Generate</button>
+                </div>
             </form>
         </div>
     </div>
 
-    <div id="modal-result" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
-        <div class="w-full max-w-md glass-panel rounded-2xl p-8 flex flex-col max-h-[80vh]">
-            <h3 class="text-xl font-bold text-center mb-4 text-emerald-400">発行完了</h3>
-            <div id="result-list" class="flex-1 overflow-y-auto space-y-2 mb-4"></div>
-            <button onclick="ui.closeModal('modal-result'); logic.loadEventDetail();" class="py-3 bg-white/10 rounded-lg">閉じる</button>
+    <!-- Result Modal -->
+    <div id="modal-result" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/90 backdrop-blur-md p-4 transition-opacity duration-300">
+        <div class="w-full max-w-md glass-panel rounded-2xl p-8 flex flex-col max-h-[80vh] relative border border-emerald-500/30">
+             <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500 shadow-[0_0_20px_#10b981]"></div>
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-2 text-emerald-400 border border-emerald-500/20"><i class="fa-solid fa-check"></i></div>
+                <h3 class="text-xl font-serif font-bold text-white tracking-wide">GENERATION COMPLETE</h3>
+            </div>
+            <div id="result-list" class="flex-1 overflow-y-auto space-y-2 mb-6 custom-scrollbar pr-2"></div>
+            <button onclick="ui.closeModal('modal-result'); logic.loadEventDetail();" class="w-full py-4 bg-white/5 hover:bg-white/10 rounded-xl font-bold transition uppercase text-xs tracking-widest">Close</button>
+        </div>
+    </div>
+
+    <!-- Email Modal -->
+    <div id="modal-send-email" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+        <div class="w-full max-w-sm glass-panel rounded-2xl p-6 shadow-2xl">
+            <h3 class="text-lg font-bold mb-4 flex items-center text-white"><i class="fa-solid fa-envelope text-gold-400 mr-2"></i>Send Ticket</h3>
+            <div class="mb-4 bg-black/30 p-4 rounded-xl border border-white/5 text-sm flex justify-between items-center">
+                <div><p class="text-[10px] opacity-50 uppercase">Seat</p><p id="mail-target-seat" class="font-bold text-white">-</p></div>
+                <div class="text-right"><p class="text-[10px] opacity-50 uppercase">Code</p><p id="mail-target-code" class="font-mono text-gold-400">-</p></div>
+            </div>
+            <input type="email" id="single-email-addr" placeholder="recipient@example.com" class="w-full input-field rounded-lg p-3 mb-4 outline-none text-sm">
+            <div class="flex gap-2">
+                <button onclick="ui.closeModal('modal-send-email')" class="flex-1 py-2 opacity-50 hover:opacity-100 text-xs uppercase tracking-widest">Cancel</button>
+                <button onclick="logic.executeSendEmail()" id="btn-single-send" class="flex-1 btn-gold py-2 rounded-lg text-xs font-bold shadow uppercase tracking-widest">Send</button>
+            </div>
+            <p id="single-email-status" class="text-center text-[10px] mt-3 h-4 text-slate-400"></p>
         </div>
     </div>
 
@@ -299,19 +571,18 @@
             return json;
         }
 
-        // Fixed: added scanActive, videoStream to global definition
         let user = null, curEvt = null, eventTickets = [], scanActive = false, videoStream = null;
+        let pendingImageBase64 = null; // Store base64 image during event creation
+        let mailTargetTicket = null;
 
         const auth = {
             mode: 'login',
             toggleMode: (m) => {
                 auth.mode = m;
-                document.getElementById('tab-login').className = m==='login'?'flex-1 py-3 rounded text-gold-400 bg-white/10':'flex-1 py-3 opacity-50';
-                document.getElementById('tab-register').className = m==='register'?'flex-1 py-3 rounded text-gold-400 bg-white/10':'flex-1 py-3 opacity-50';
-                document.getElementById('btn-auth').textContent = m==='login'?'入場':'登録';
-                const ef = document.getElementById('auth-email'), rs = document.getElementById('auth-role');
-                if(ef) ef.classList.toggle('hidden', m==='login');
-                if(rs) rs.classList.toggle('hidden', m==='login');
+                document.getElementById('tab-login').className = m==='login'?'flex-1 py-3 rounded text-gold-400 bg-white/10 shadow-inner':'flex-1 py-3 opacity-50 hover:text-white transition';
+                document.getElementById('tab-register').className = m==='register'?'flex-1 py-3 rounded text-gold-400 bg-white/10 shadow-inner':'flex-1 py-3 opacity-50 hover:text-white transition';
+                document.getElementById('btn-auth').textContent = m==='login'?'ENTER':'REGISTER';
+                ['field-email', 'role-selector'].forEach(id => document.getElementById(id).classList.toggle('hidden', m==='login'));
             },
             submit: async (e) => {
                 e.preventDefault();
@@ -321,8 +592,7 @@
                     if(auth.mode === 'register') { alert('登録完了'); auth.toggleMode('login'); }
                     else { user = res.user; localStorage.setItem('prop_u', JSON.stringify(user)); app.init(); }
                 } catch(err) {
-                    const msgEl = document.getElementById('auth-msg');
-                    if (msgEl) msgEl.textContent = err.message;
+                    const msg = document.getElementById('auth-msg'); if(msg) msg.textContent = err.message;
                     document.getElementById('auth-error-box').classList.remove('hidden');
                 }
             },
@@ -333,113 +603,114 @@
             init: () => {
                 user = JSON.parse(localStorage.getItem('prop_u'));
                 if(!user) { document.getElementById('view-auth').classList.remove('hidden'); return; }
-                document.getElementById('view-auth').classList.add('hidden');
-                document.getElementById('app-layout').classList.remove('hidden');
-                setTimeout(()=>document.getElementById('app-layout').classList.remove('opacity-0'),10);
+                const vAuth = document.getElementById('view-auth'); vAuth.style.opacity='0'; setTimeout(()=>vAuth.classList.add('hidden'),700);
+                const layout = document.getElementById('app-layout'); layout.classList.remove('hidden'); setTimeout(()=>layout.classList.remove('opacity-0'),100);
                 
                 document.getElementById('sidebar-user').textContent = user.username;
-                ui.initNav();
-                ui.popOpts();
+                ui.initNav(); ui.popOpts();
                 router.go('dashboard');
-                
-                const th = localStorage.getItem('theme') || 'dark';
-                document.documentElement.setAttribute('data-theme', th);
+                const th = localStorage.getItem('theme') || 'dark'; document.documentElement.setAttribute('data-theme', th);
             }
         };
 
         const router = {
             go: (view, params) => {
-                const c = document.getElementById('content-container'); c.innerHTML = '';
-                logic.stopScanner(); 
-
-                if(view==='dashboard') c.appendChild(document.getElementById(user.role==='organizer'?'tmpl-organizer':'tmpl-attendee').content.cloneNode(true));
-                if(view==='scanner') { 
-                    c.appendChild(document.getElementById('tmpl-scanner').content.cloneNode(true)); 
-                    setTimeout(logic.scanStart, 300); 
-                }
-                if(view==='detail') { c.appendChild(document.getElementById('tmpl-event-detail').content.cloneNode(true)); logic.loadEventDetail(params); }
-                if(view==='ticket') { c.appendChild(document.getElementById('tmpl-ticket-detail').content.cloneNode(true)); logic.renderTicket(params); }
-                
+                document.getElementById('content-container').innerHTML = '';
+                logic.stopScanner();
+                if(view==='dashboard') document.getElementById('content-container').appendChild(document.getElementById(user.role==='organizer'?'tmpl-organizer':'tmpl-attendee').content.cloneNode(true));
+                if(view==='scanner') { document.getElementById('content-container').appendChild(document.getElementById('tmpl-scanner').content.cloneNode(true)); setTimeout(logic.scanStart, 500); }
+                if(view==='detail') { document.getElementById('content-container').appendChild(document.getElementById('tmpl-event-detail').content.cloneNode(true)); logic.loadEventDetail(params); }
+                if(view==='ticket') { document.getElementById('content-container').appendChild(document.getElementById('tmpl-ticket-detail').content.cloneNode(true)); logic.renderTicket(params); }
+                router.current = view; router.params = params;
                 if(view==='dashboard') logic.loadDash();
+                ui.updateNavState(view);
             },
-            back: () => router.go('dashboard'),
-            navigate: (view, params) => router.go(view, params)
+            back: () => {
+                 if(router.current === 'ticket' || router.current === 'scanner') router.go('dashboard');
+                 else if(router.current === 'detail') router.go('dashboard');
+                 else router.go('dashboard');
+            }
         };
 
         const ui = {
             showModal: (id) => document.getElementById(id).classList.remove('hidden'),
             closeModal: (id) => document.getElementById(id).classList.add('hidden'),
-            toggleTheme: () => {
-                const n = document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
-                document.documentElement.setAttribute('data-theme', n); localStorage.setItem('theme', n);
-            },
+            toggleTheme: () => { const n = document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark'; document.documentElement.setAttribute('data-theme', n); localStorage.setItem('theme', n); },
             initNav: () => {
-                const links = user.role==='organizer' 
-                    ? [{l:'ダッシュボード',i:'fa-chart-pie',a:()=>router.go('dashboard')}, {l:'スキャナー',i:'fa-expand',a:()=>router.go('scanner')}]
-                    : [{l:'マイチケット',i:'fa-ticket',a:()=>router.go('dashboard')}];
-                const gen = (p) => {
-                    const el = document.getElementById(p); el.innerHTML = '';
+                const links = user.role==='organizer' ? [{l:'DASHBOARD',i:'fa-layer-group',v:'dashboard'},{l:'SCANNER',i:'fa-expand',v:'scanner'}] : [{l:'MY TICKETS',i:'fa-ticket',v:'dashboard'}];
+                ['sidebar-nav','mobile-nav'].forEach(pid => {
+                    const el = document.getElementById(pid); el.innerHTML = '';
                     links.forEach(x => {
-                        const b = document.createElement('button'); b.className = p.includes('side') ? 'w-full text-left px-4 py-3 opacity-70 hover:opacity-100 flex gap-3' : 'flex flex-col items-center opacity-70';
-                        b.innerHTML = `<i class="fa-solid ${x.i}"></i> <span>${x.l}</span>`; b.onclick = x.a; el.appendChild(b);
+                        const b = document.createElement('button'); b.id = `nav-${pid}-${x.v}`;
+                        b.className = pid.includes('side') ? 'w-full text-left px-4 py-3 rounded-lg opacity-60 hover:opacity-100 hover:bg-white/5 flex items-center gap-4 text-xs font-bold tracking-widest transition' : 'flex flex-col items-center gap-1 opacity-60 hover:opacity-100';
+                        b.innerHTML = `<i class="fa-solid ${x.i} ${pid.includes('side')?'w-6 text-center':''}"></i> ${pid.includes('mobile')?`<span class="text-[9px] font-bold tracking-wider">${x.l}</span>`:x.l}`;
+                        b.onclick = () => router.go(x.v); el.appendChild(b);
                     });
-                };
-                gen('sidebar-nav'); gen('mobile-nav');
-            },
-            popOpts: () => {
-                const az = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(x=>`<option>${x}</option>`).join("");
-                const ids = ['conf-row-start', 'conf-row-end', 'issue-row-s', 'issue-row-e'];
-                ids.forEach(id => {
-                    const el = document.getElementById(id);
-                    if(el) { el.innerHTML=az; if(id.endsWith('start')||id.endsWith('s')) el.value='A'; else el.value='C'; }
                 });
             },
-            toggleCreateSeatConfig: () => {
-                const type = document.querySelector('input[name="seatType"]:checked').value;
-                document.getElementById('conf-designated').classList.toggle('hidden', type !== 'designated');
-                document.getElementById('conf-free').classList.toggle('hidden', type !== 'free');
+            updateNavState: (v) => {
+                document.querySelectorAll('[id^="nav-"]').forEach(el => {
+                    if(el.id.endsWith(v)) { el.classList.remove('opacity-60'); el.classList.add('text-gold-400','bg-white/5'); }
+                    else { el.classList.add('opacity-60'); el.classList.remove('text-gold-400','bg-white/5'); }
+                });
             },
-            setScanStatus: (status) => {
-                const frame = document.getElementById('scan-frame');
-                const line = document.getElementById('scan-line');
-                if(!frame) return;
-                if (status === 'default') {
-                    frame.className = "w-64 h-64 border-2 border-white/50 rounded-2xl relative transition-all duration-300";
-                    line.className = "absolute top-0 w-full h-0.5 bg-gold-400 shadow-[0_0_20px_#D4AF37] animate-scan";
-                } else if (status === 'success') {
-                    frame.className = "w-64 h-64 border-4 border-emerald-500 rounded-2xl relative transition-all duration-300 shadow-[0_0_50px_#10b981]";
-                    line.className = "hidden";
-                } else if (status === 'error') {
-                    frame.className = "w-64 h-64 border-4 border-red-500 rounded-2xl relative transition-all duration-300 shadow-[0_0_50px_#ef4444]";
-                    line.className = "hidden";
-                }
+            popOpts: () => {
+                const az = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(x=>`<option value="${x}">${x}</option>`).join("");
+                ['conf-row-start','conf-row-end','issue-row-s','issue-row-e'].forEach(id => { const el=document.getElementById(id); if(el){ el.innerHTML=az; if(id.endsWith('start')||id.endsWith('s')) el.value='A'; else el.value='C'; } });
+            },
+            toggleCreateSeatConfig: () => {
+                const t = document.querySelector('input[name="seatType"]:checked').value;
+                document.getElementById('conf-designated').classList.toggle('hidden', t!=='designated');
+                document.getElementById('conf-free').classList.toggle('hidden', t!=='free');
+            },
+            setScanStatus: (s) => {
+                const f = document.getElementById('scan-frame'); if(!f) return;
+                f.className = `w-64 h-64 border-2 rounded-3xl relative transition-all duration-300 ${s==='success'?'border-emerald-500 shadow-[0_0_50px_#10b981]':s==='error'?'border-red-500 shadow-[0_0_50px_#ef4444]':'border-white/30'}`;
+                document.getElementById('scan-line').style.display = s==='default'?'block':'none';
             }
         };
 
         const logic = {
+            handleImageUpload: (input) => {
+                if (input.files && input.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        pendingImageBase64 = e.target.result;
+                        document.getElementById('img-preview').style.backgroundImage = `url('${e.target.result}')`;
+                        document.getElementById('img-preview').innerHTML = ''; // Hide icon/text
+                    };
+                    reader.readAsDataURL(input.files[0]);
+                }
+            },
             loadDash: async () => {
                 if(user.role==='attendee') {
                     const res = await api('my_tickets', {userId: user.id});
                     document.getElementById('my-ticket-list').innerHTML = res.tickets.map(t => {
                         const cfg = t.seat_config || {}; 
-                        const imgStyle = cfg.imageUrl ? `background-image: url('${cfg.imageUrl}');` : '';
-                        return `<div onclick="router.go('ticket', ${JSON.stringify(t).replace(/"/g, '&quot;')})" class="glass-panel p-4 rounded-xl flex justify-between cursor-pointer hover:border-gold-400 relative overflow-hidden group">
-                            <div class="absolute inset-0 bg-cover bg-center opacity-20 transition group-hover:opacity-30" style="${imgStyle}"></div>
-                            <div class="relative z-10"><h4 class="font-bold">${t.event_name}</h4><p class="text-xs opacity-70">${t.seat_number}</p></div>
-                            <div class="relative z-10 text-right"><span class="px-2 py-1 rounded text-xs ${t.status==='used'?'bg-slate-700':'bg-emerald-900 text-emerald-400'}">${t.status==='used'?'済':'有効'}</span></div>
+                        // Assuming seat_config might be passed down joined, or using simple logic if available
+                        // Currently backend doesn't join seat_config to my_tickets. 
+                        // In real app, we need to fetch event details or join in SQL. 
+                        // Simulating visual if available or placeholder.
+                        return `<div onclick="router.go('ticket', ${JSON.stringify(t).replace(/"/g, '&quot;')})" class="glass-panel p-6 rounded-2xl cursor-pointer hover:border-gold-400/50 relative overflow-hidden group transition-all duration-300">
+                            <div class="relative z-10 flex justify-between items-start">
+                                <div><h4 class="font-serif font-bold text-xl text-white group-hover:text-gold-400 transition mb-1">${t.event_name}</h4><p class="text-xs text-slate-400 font-mono tracking-wider">${t.seat_number}</p></div>
+                                <span class="px-2 py-1 rounded text-[10px] font-bold tracking-widest uppercase ${t.status==='used'?'bg-slate-800 text-slate-500':'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">${t.status==='used'?'USED':'ACTIVE'}</span>
+                            </div>
+                            <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-gold-400/10 rounded-full blur-2xl group-hover:bg-gold-400/20 transition"></div>
                         </div>`;
                     }).join('');
                 } else {
                     const res = await api('get_events');
                     document.getElementById('stats-events').textContent = res.events.length;
                     document.getElementById('org-event-list').innerHTML = res.events.map(e => {
-                        const cfg = e.seatConfig || {};
-                        const imgStyle = cfg.imageUrl ? `background-image: url('${cfg.imageUrl}');` : '';
-                        const params = {id: e.id, name: e.eventName, date: e.eventDate, loc: e.eventLocation, config: e.seatConfig};
-                        return `<div onclick='router.go("detail", ${JSON.stringify(params)})' class="p-4 hover:bg-white/5 cursor-pointer flex justify-between border-b border-white/5 relative overflow-hidden group">
-                            <div class="absolute inset-0 bg-cover bg-center opacity-0 group-hover:opacity-20 transition" style="${imgStyle}"></div>
-                            <div class="relative z-10"><h4 class="font-bold">${e.eventName}</h4><p class="text-xs opacity-50">${e.eventDate||'-'}</p></div>
-                            <i class="fa-solid fa-chevron-right opacity-30 relative z-10"></i>
+                        const style = e.seatConfig?.imageUrl ? `background-image: url('${e.seatConfig.imageUrl}');` : '';
+                        const p = {id:e.id, name:e.eventName, date:e.eventDate, loc:e.eventLocation, config:e.seatConfig};
+                        return `<div onclick='router.go("detail", ${JSON.stringify(p)})' class="glass-panel p-0 rounded-xl cursor-pointer relative overflow-hidden group h-32 border border-white/5 hover:border-gold-400/30 transition-all">
+                            <div class="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-105 opacity-40" style="${style}"></div>
+                            <div class="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent p-6 flex flex-col justify-center">
+                                <h4 class="font-serif font-bold text-xl text-white group-hover:text-gold-400 transition mb-1 relative z-10">${e.eventName}</h4>
+                                <div class="flex gap-4 text-xs text-slate-400 font-mono relative z-10"><span>${e.eventDate||'TBD'}</span><span>${e.eventLocation||'Unknown'}</span></div>
+                            </div>
                         </div>`;
                     }).join('');
                 }
@@ -449,7 +720,7 @@
                 const type = document.querySelector('input[name="seatType"]:checked').value;
                 const cfg = {
                     type: type,
-                    imageUrl: document.getElementById('new-evt-img').value,
+                    imageUrl: pendingImageBase64, // Use base64
                     rows: [document.getElementById('conf-row-start').value, document.getElementById('conf-row-end').value],
                     colMax: document.getElementById('conf-col-max').value,
                     capacity: document.getElementById('conf-capacity').value
@@ -460,28 +731,34 @@
                     eventDate: document.getElementById('new-evt-date').value, eventLocation: document.getElementById('new-evt-loc').value,
                     isPublic: document.getElementById('new-evt-public').checked, seatConfig: cfg
                 });
+                pendingImageBase64 = null; // Reset
                 ui.closeModal('modal-create-event'); logic.loadDash();
             },
             loadEventDetail: async (params) => {
                 if(params) curEvt = params;
                 document.getElementById('detail-page-title').textContent = curEvt.name;
-                document.getElementById('detail-page-date').textContent = curEvt.date;
-                document.getElementById('detail-page-loc').textContent = curEvt.loc;
+                document.getElementById('detail-page-date').textContent = curEvt.date || 'TBD';
+                document.getElementById('detail-page-loc').textContent = curEvt.loc || 'Unknown';
                 
                 const cfg = curEvt.config || {};
-                let info = cfg.type === 'free' ? `自由席 (定員: ${cfg.capacity}枚)` : `指定席 (${cfg.rows?cfg.rows.join('-'):'?'}行, 1-${cfg.colMax}列)`;
+                let info = cfg.type === 'free' ? `FREE SEATING (MAX: ${cfg.capacity})` : `DESIGNATED (${cfg.rows?cfg.rows.join('-'):'?'} / 1-${cfg.colMax})`;
                 document.getElementById('detail-config-info').textContent = info;
-                if(cfg.imageUrl) document.getElementById('detail-bg-image').style.backgroundImage = `url('${cfg.imageUrl}')`;
+                if(cfg.imageUrl) {
+                    document.getElementById('detail-hero-img').style.backgroundImage = `url('${cfg.imageUrl}')`;
+                    document.getElementById('detail-hero-img').style.opacity = '0.4';
+                }
 
                 const res = await api('get_event_tickets', {eventId: curEvt.id});
                 eventTickets = res.tickets || [];
+                document.getElementById('detail-count').textContent = eventTickets.length;
                 document.getElementById('detail-ticket-list').innerHTML = eventTickets.map(t => 
-                    `<tr>
-                        <td class="px-4 py-3 font-bold">${t.seat_number}</td>
-                        <td class="px-4 py-3 font-mono text-xs text-gold-400">${t.claim_code}</td>
-                        <td class="px-4 py-3 text-xs">${t.owner_name||'-'}</td>
+                    `<tr class="hover:bg-white/5 transition border-b border-white/5 last:border-0 group">
+                        <td class="px-4 py-3 font-bold text-white">${t.seat_number}</td>
+                        <td class="px-4 py-3 font-mono text-xs text-gold-400 tracking-wider">${t.claim_code}</td>
+                        <td class="px-4 py-3 text-xs text-slate-400">${t.owner_name||'-'}</td>
+                        <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${t.status==='used'?'bg-slate-800 text-slate-500':'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">${t.status==='used'?'USED':'ACTIVE'}</span></td>
                         <td class="px-4 py-3 text-right">
-                            <button onclick="logic.sendMail('${t.id}', '${t.seat_number}', '${t.claim_code}')" class="${t.mail_sent?'text-emerald-400':'opacity-50 hover:text-gold-400'}"><i class="fa-solid fa-envelope"></i></button>
+                            <button onclick='logic.openEmailModal(${JSON.stringify({seat:t.seat_number, claimCode:t.claim_code, ticketId:t.id})})' class="w-8 h-8 rounded bg-white/5 hover:bg-gold-400 hover:text-black transition flex items-center justify-center ${t.mail_sent?'text-emerald-400 border border-emerald-500/30':''}"><i class="fa-solid fa-envelope"></i></button>
                         </td>
                     </tr>`
                 ).join('');
@@ -494,7 +771,6 @@
                 const isFree = cfg.type === 'free';
                 
                 document.getElementById('issue-designated-opts').classList.toggle('hidden', isFree);
-                
                 if(!isFree && cfg.rows) {
                     ui.popOpts(); 
                     document.getElementById('issue-row-s').value = cfg.rows[0];
@@ -506,11 +782,9 @@
                     const issued = eventTickets.length;
                     const cap = parseInt(cfg.capacity) || 9999;
                     const remain = cap - issued;
-                    document.getElementById('issue-limit-info').textContent = `残数: ${remain} / 定員: ${cap}`;
+                    document.getElementById('issue-limit-info').textContent = `REMAINING: ${remain} / CAP: ${cap}`;
                     document.getElementById('issue-qty').max = remain;
-                } else {
-                    document.getElementById('issue-limit-info').textContent = '';
-                }
+                } else { document.getElementById('issue-limit-info').textContent = ''; }
 
                 ui.showModal('modal-issue-ticket');
             },
@@ -519,149 +793,143 @@
                 const qty = parseInt(document.getElementById('issue-qty').value);
                 const cfg = curEvt.config || {};
                 const isFreeEvent = cfg.type === 'free';
-                
                 let seats = [];
+
                 if(isFreeEvent) {
                     const currentCount = eventTickets.length;
                     const limit = parseInt(cfg.capacity) || 9999;
-                    if(currentCount + qty > limit) { alert(`定員オーバーです (残り: ${limit - currentCount}枚)`); return; }
-                    
+                    if(currentCount + qty > limit) { alert(`Capacity Limit Reached (Remaining: ${limit - currentCount})`); return; }
                     for(let i=1; i<=qty; i++) seats.push(`自由席 #${currentCount + i}`);
                 } else {
+                    // Designated Logic
                     const rS = document.getElementById('issue-row-s').value, rE = document.getElementById('issue-row-e').value;
                     const cS = parseInt(document.getElementById('issue-col-s').value), cE = parseInt(document.getElementById('issue-col-e').value);
-                    const exStr = document.getElementById('issue-exclude').value;
-                    const ex = exStr ? exStr.split(',').map(s=>s.trim().toUpperCase()) : [];
-                    const existingSeats = eventTickets.map(t => t.seat_number);
+                    const ex = (document.getElementById('issue-exclude').value || '').split(',').map(s=>s.trim().toUpperCase());
+                    const existing = eventTickets.map(t => t.seat_number);
                     
-                    let candidates = [];
+                    let cands = [];
                     const sC = Math.min(rS.charCodeAt(0), rE.charCodeAt(0)), eC = Math.max(rS.charCodeAt(0), rE.charCodeAt(0));
                     for(let r=sC; r<=eC; r++) {
                         for(let c=Math.min(cS, cE); c<=Math.max(cS, cE); c++) {
                             const seat = `${String.fromCharCode(r)}-${c}`;
-                            if(!ex.includes(seat) && !existingSeats.includes(seat)) {
-                                candidates.push(seat);
-                            }
+                            if(!ex.includes(seat) && !existing.includes(seat)) cands.push(seat);
                         }
                     }
 
-                    if (candidates.length < qty) { alert(`空席が足りません (発行可能: ${candidates.length}席)`); return; }
-                    
-                    for (let i = candidates.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [candidates[i], candidates[j]] = [candidates[j], candidates[i]]; }
-                    seats = candidates.slice(0, qty);
+                    if (cands.length < qty) { alert(`Not enough seats available in range. (Found: ${cands.length})`); return; }
+                    // Shuffle
+                    for (let i = cands.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [cands[i], cands[j]] = [cands[j], cands[i]]; }
+                    seats = cands.slice(0, qty);
                 }
 
                 try {
                     const res = await api('issue_ticket', { eventId: curEvt.id, seats: seats, isFreeSeat: isFreeEvent });
                     ui.closeModal('modal-issue-ticket');
                     document.getElementById('result-list').innerHTML = res.tickets.map(t => 
-                        `<div class="flex justify-between border-b border-white/10 p-2"><span>${t.seat}</span><span class="font-mono text-gold-400 select-all">${t.claimCode}</span></div>`
-                    ).join('');
-                    ui.showModal('modal-result');
+                        `<div class="bg-white/5 border border-white/10 rounded-lg p-3 flex justify-between items-center">
+                            <div><p class="text-[9px] opacity-50 uppercase tracking-widest mb-1">SEAT</p><p class="text-sm font-bold text-white">${t.seat}</p></div>
+                            <div class="text-right"><p class="text-[9px] opacity-50 uppercase tracking-widest mb-1">CODE</p><p class="text-lg font-mono font-bold text-gold-400 tracking-wider">${t.claimCode}</p></div>
+                        </div>`).join('');
+                    ui.showModal('modal-issue-result');
                 } catch(err) { alert(err.message); }
             },
-            sendMail: async (tid, seat, code) => {
-                const email = prompt("送信先メールアドレス:");
-                if(!email) return;
-                try {
-                    await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({email, tickets:[{seat, claimCode: code}]}) });
-                    await api('mark_mail_sent', {ticketId: tid});
-                    alert('送信リクエスト完了');
-                    logic.loadEventDetail(); // Refresh list to show icon
-                } catch(e) { alert('送信失敗'); }
+            openEmailModal: (ticket) => {
+                mailTargetTicket = ticket;
+                document.getElementById('mail-target-seat').textContent = ticket.seat;
+                document.getElementById('mail-target-code').textContent = ticket.claimCode;
+                document.getElementById('single-email-status').textContent = '';
+                document.getElementById('single-email-addr').value = '';
+                ui.showModal('modal-send-email');
             },
-            claimTicket: async () => {
+            executeSendEmail: async () => {
+                const email = document.getElementById('single-email-addr').value;
+                const statusEl = document.getElementById('single-email-status');
+                const btn = document.getElementById('btn-single-send');
+                if(!email) { statusEl.textContent = "Please enter email"; statusEl.className = "text-center text-xs mt-3 h-4 text-red-400"; return; }
+                
+                statusEl.textContent = "Sending..."; statusEl.className = "text-center text-xs mt-3 h-4 text-gold-400 animate-pulse";
+                btn.disabled = true;
+                
+                try {
+                    await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({email, tickets:[mailTargetTicket]}) });
+                    await api('mark_mail_sent', {ticketId: mailTargetTicket.ticketId});
+                    statusEl.textContent = "Sent successfully"; statusEl.className = "text-center text-xs mt-3 h-4 text-emerald-400";
+                    setTimeout(() => { ui.closeModal('modal-send-email'); logic.loadEventDetail(); }, 1000);
+                } catch(e) { statusEl.textContent = "Failed"; statusEl.className = "text-center text-xs mt-3 h-4 text-red-400"; } 
+                finally { btn.disabled = false; }
+            },
+            claimTicket: async (e) => {
+                e.preventDefault();
                 try {
                     await api('claim_ticket', {userId: user.id, code: document.getElementById('claim-code-input').value});
-                    alert('取得しました'); logic.loadDash();
-                } catch(e) { alert('コードが無効です'); }
+                    alert('Ticket added to vault.'); document.getElementById('claim-code-input').value = ''; logic.loadDash();
+                } catch(e) { alert('Invalid Code'); }
             },
             renderTicket: (t) => {
                 document.getElementById('detail-event').textContent = t.event_name;
-                document.getElementById('detail-date').textContent = t.event_date;
-                document.getElementById('detail-loc').textContent = t.event_location;
+                document.getElementById('detail-date').textContent = t.event_date || 'TBD';
+                document.getElementById('detail-loc').textContent = t.event_location || '';
                 document.getElementById('detail-seat').textContent = t.seat_number;
                 document.getElementById('detail-id').textContent = t.id;
                 
-                const qc = document.getElementById('qrcode-display'); qc.innerHTML='';
-                new QRCode(qc, {text:JSON.stringify({id:t.id}), width:150, height:150});
+                // Show Image on Ticket if exists (Requires backend to return config or image url in t)
+                // For now, if we had it in cache or similar. 
+                // Assuming simple implementation without image per ticket for now in renderTicket.
+                
+                const st = document.getElementById('detail-status');
+                st.textContent = t.status === 'used' ? "ARCHIVED" : "VALID ENTRY";
+                st.className = t.status === 'used' ? "bg-slate-300 p-4 text-center text-xs font-bold text-slate-500 border-t border-slate-400 tracking-[0.3em]" : "bg-gold-400 p-4 text-center text-xs font-bold text-black border-t border-gold-500 tracking-[0.3em] shadow-glow";
+                
+                const qc = document.getElementById('qrcode-display');
+                if(qc) { qc.innerHTML = ''; try { new QRCode(qc, { text: JSON.stringify({ id: t.id }), width: 150, height: 150, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H }); } catch(e){} }
             },
             scanStart: () => {
-                const video = document.getElementById('video');
-                const canvasElement = document.getElementById('canvas');
-                const resultBox = document.getElementById('scan-result');
-                if(!video || !canvasElement) return;
-
-                const canvas = canvasElement.getContext('2d', { willReadFrequently: true });
-                scanActive = true;
-
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
-                    videoStream = stream;
-                    video.srcObject = stream;
-                    video.setAttribute("playsinline", true);
-                    video.play();
-                    requestAnimationFrame(tick);
-                }).catch(err => {
-                    if(resultBox) resultBox.innerHTML = `<p class="text-red-400">カメラエラー: ${err.message || 'HTTPS必須'}</p>`;
-                });
-
+                const vid = document.getElementById('video'), box = document.getElementById('scan-result'), msg = document.getElementById('loadingMessage');
+                if(!vid) return;
+                scanActive = true; ui.setScanStatus('default');
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: {ideal: 1280}, height: {ideal: 720} } }).then(s => { videoStream = s; vid.srcObject = s; vid.setAttribute("playsinline", true); vid.play(); requestAnimationFrame(tick); }).catch(e => { if(box) box.innerHTML = `<p class="text-red-400 font-mono text-xs">CAMERA ERROR</p>`; });
+                
+                const cvs = document.getElementById('canvas'), ctx = cvs.getContext('2d', { willReadFrequently: true });
                 function tick() {
-                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                        canvasElement.height = video.videoHeight;
-                        canvasElement.width = video.videoWidth;
-                        canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-                        if (scanActive) {
-                            const code = jsQR(canvas.getImageData(0, 0, canvasElement.width, canvasElement.height).data, canvasElement.width, canvasElement.height, { inversionAttempts: "dontInvert" });
-                            if (code && code.data) logic.processScan(code.data);
+                    if(vid.readyState === vid.HAVE_ENOUGH_DATA) {
+                        if(msg) msg.hidden = true; cvs.height = vid.videoHeight; cvs.width = vid.videoWidth; ctx.drawImage(vid, 0, 0, cvs.width, cvs.height);
+                        if(scanActive) {
+                            const c = jsQR(ctx.getImageData(0, 0, cvs.width, cvs.height).data, cvs.width, cvs.height, { inversionAttempts: "dontInvert" });
+                            if(c && c.data) logic.processScan(c.data);
                         }
                     }
-                    if(videoStream && videoStream.active) requestAnimationFrame(tick);
+                    if(videoStream) requestAnimationFrame(tick);
                 }
             },
-            stopScanner: () => {
+            stopScanner: () => { scanActive = false; if(videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; } },
+            processScan: async (c) => {
                 scanActive = false;
-                if (videoStream) {
-                    videoStream.getTracks().forEach(track => track.stop());
-                    videoStream = null;
-                }
-            },
-            processScan: async (content) => {
-                scanActive = false; 
-                let id;
-                try {
-                    const d = JSON.parse(content);
-                    if(!d.id) throw 1;
-                    id = d.id;
-                } catch(e) { 
-                    setTimeout(() => scanActive = true, 500); 
-                    return; 
-                }
-
+                let id; try { id = JSON.parse(c).id; if(!id) throw 1; } catch(e) { setTimeout(() => scanActive = true, 500); return; }
                 const res = document.getElementById('scan-result');
-                res.innerHTML = '<span class="text-gold-400 animate-pulse">照合中...</span>';
-
+                res.innerHTML = '<span class="text-gold-400 animate-pulse font-mono text-xs tracking-widest">VERIFYING...</span>';
                 try {
-                    const data = await api('scan', { ticketId: id });
-                    if(data.status === 'success') {
-                        res.innerHTML = `<div class="text-emerald-400 font-bold text-lg"><i class="fa-solid fa-check-circle"></i> OK<br><span class="text-white text-sm">${data.ticket.owner_name}<br>${data.ticket.seat_number}</span></div>`;
-                    } else if(data.status === 'used') {
-                        res.innerHTML = `<div class="text-yellow-400 font-bold text-lg"><i class="fa-solid fa-triangle-exclamation"></i> 使用済み</div>`;
-                    } else {
-                        res.innerHTML = `<div class="text-red-400 font-bold">エラー<br><span class="text-xs text-white">${data.message}</span></div>`;
-                    }
+                    const d = await api('scan', { ticketId: id });
+                    if(d.status === 'success') {
+                        ui.setScanStatus('success');
+                        res.className = "mt-6 min-h-[120px] rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all duration-300 border border-emerald-500/50 bg-emerald-900/20";
+                        res.innerHTML = `<div><i class="fa-solid fa-check-circle text-4xl text-emerald-400 mb-2"></i><h3 class="font-serif font-bold text-white text-xl tracking-wide">ACCESS GRANTED</h3><p class="text-emerald-200/70 font-mono text-sm mt-1">${d.ticket.owner_name}</p><p class="text-white font-bold mt-1">${d.ticket.seat_number}</p></div>`;
+                    } else if(d.status === 'used') {
+                        ui.setScanStatus('error');
+                        res.className = "mt-6 min-h-[120px] rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all duration-300 border border-slate-500/50 bg-slate-900/50";
+                        res.innerHTML = `<div><i class="fa-solid fa-triangle-exclamation text-4xl text-slate-400 mb-2"></i><h3 class="font-serif font-bold text-white text-xl tracking-wide">ALREADY USED</h3></div>`;
+                    } else { throw new Error(d.message); }
                 } catch(e) {
-                    res.innerHTML = `<div class="text-red-400 font-bold">通信エラー<br><span class="text-xs text-white">${e.message}</span></div>`;
+                    ui.setScanStatus('error');
+                    res.className = "mt-6 min-h-[120px] rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all duration-300 border border-red-500/50 bg-red-900/20";
+                    res.innerHTML = `<div><i class="fa-solid fa-xmark text-4xl text-red-400 mb-2"></i><h3 class="font-serif font-bold text-white text-xl tracking-wide">DENIED</h3><p class="text-red-300/70 font-mono text-[10px] mt-2 uppercase tracking-wider">${e.message}</p></div>`;
                 }
-
-                setTimeout(() => {
-                    scanActive = true;
-                    if(res) res.innerHTML = '<p class="text-xs opacity-50">QRをスキャン</p>';
-                }, 3000);
+                setTimeout(() => { ui.setScanStatus('default'); scanActive = true; res.className = "mt-6 min-h-[120px] glass-panel rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all duration-300 border border-white/5"; res.innerHTML = '<p class="opacity-50 text-xs font-mono tracking-widest">READY TO SCAN</p>'; }, 3000);
             }
         };
 
-        document.getElementById('auth-form').addEventListener('submit', auth.submit);
         window.addEventListener('load', app.init);
+        document.getElementById('auth-form').addEventListener('submit', auth.submit);
+        auth.toggleMode('login');
     </script>
 </body>
 </html>
