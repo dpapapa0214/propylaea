@@ -1,791 +1,621 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NexTicket Pro</title>
+    <title>PROPYLAEA - Future Gate</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- QR Code Generator -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- jsQR Library -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
+            darkMode: ['class', '[data-theme="dark"]'],
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
-                    colors: {
-                        glass: 'rgba(15, 23, 42, 0.9)',
-                        brand: { 500: '#6366f1', 600: '#4f46e5' }
-                    }
+                    fontFamily: { sans: ['Noto Sans JP', 'sans-serif'], serif: ['Cinzel', 'serif'] },
+                    colors: { gold: { 400: '#D4AF37', 500: '#C5A028', 600: '#B4901E' } }
                 }
             }
         }
     </script>
     <style>
-        body { background-color: #020617; color: #f8fafc; }
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        :root {
+            --bg-main: #050505; --text-main: #f1f5f9; --panel-bg: rgba(20, 20, 25, 0.8);
+            --panel-border: rgba(255, 255, 255, 0.08); --input-bg: rgba(0, 0, 0, 0.3);
         }
-        .sidebar-item.active {
-            background: linear-gradient(90deg, rgba(99, 102, 241, 0.2) 0%, transparent 100%);
-            border-left: 3px solid #6366f1;
-            color: #fff;
+        :root[data-theme="light"] {
+            --bg-main: #f0f2f5; --text-main: #1e293b; --panel-bg: rgba(255, 255, 255, 0.9);
+            --panel-border: rgba(0, 0, 0, 0.05); --input-bg: rgba(255, 255, 255, 0.6);
         }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        .ticket-stub {
-            background: radial-gradient(circle at left center, transparent 10px, #1e293b 10px) left center / 50% 100% no-repeat,
-                        radial-gradient(circle at right center, transparent 10px, #1e293b 10px) right center / 50% 100% no-repeat;
-            background-color: #1e293b;
-        }
-        
-        .h-safe-screen { height: 100vh; height: 100dvh; }
+        body { background-color: var(--bg-main); color: var(--text-main); overflow: hidden; transition: background-color 0.5s; }
+        .glass-panel { background: var(--panel-bg); backdrop-filter: blur(20px); border: 1px solid var(--panel-border); }
+        .btn-gold { background: linear-gradient(135deg, #D4AF37, #B4901E); color: #000; }
+        .input-field { background: var(--input-bg); border: 1px solid var(--panel-border); color: var(--text-main); }
+        .h-safe-screen { height: 100dvh; }
+        /* Logo SVG Animation */
+        .logo-path { stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw 2s ease-out forwards; }
+        @keyframes draw { to { stroke-dashoffset: 0; } }
     </style>
 </head>
-<body class="h-safe-screen w-screen overflow-hidden flex text-sm md:text-base">
+<body class="h-safe-screen w-screen flex text-sm md:text-base font-sans">
 
-    <!-- 1. AUTH SCREEN -->
-    <div id="view-auth" class="fixed inset-0 z-50 flex items-center justify-center bg-[#020617] bg-[url('https://images.unsplash.com/photo-1540575467063-178a50935339?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center transition-opacity duration-500">
-        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"></div>
-        <div class="relative w-full max-w-md p-8 glass-panel rounded-2xl shadow-2xl mx-4 flex flex-col max-h-[90dvh] overflow-y-auto">
+    <!-- SVG LOGO DEFINITION -->
+    <svg class="hidden">
+        <symbol id="icon-propylaea" viewBox="0 0 100 100">
+            <path d="M20 80 L20 20 L80 20 L80 80" fill="none" stroke="currentColor" stroke-width="4" />
+            <path d="M35 80 L35 40 L65 40 L65 80" fill="none" stroke="currentColor" stroke-width="3" />
+            <path d="M10 20 L50 5 L90 20" fill="none" stroke="currentColor" stroke-width="4" />
+            <circle cx="50" cy="30" r="5" fill="currentColor" />
+        </symbol>
+    </svg>
+
+    <!-- AUTH -->
+    <div id="view-auth" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-500">
+        <div class="w-full max-w-md p-10 glass-panel rounded-2xl shadow-2xl m-4 flex flex-col max-h-[90vh] overflow-y-auto">
             <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold tracking-widest text-white mb-2">NexTicket<span class="text-brand-500">.</span></h1>
-                <p class="text-slate-400">次世代チケット管理プラットフォーム</p>
+                <div class="w-20 h-20 mx-auto mb-4 text-gold-400">
+                    <svg class="w-full h-full"><use href="#icon-propylaea"/></svg>
+                </div>
+                <h1 class="text-4xl font-serif font-bold text-gold-400 mb-2">PROPYLAEA</h1>
+                <p class="text-[10px] tracking-[0.3em] uppercase opacity-70">デジタル神殿への入り口</p>
             </div>
-            
-            <div class="flex bg-slate-800/50 p-1 rounded-xl mb-6 shrink-0">
-                <button onclick="auth.toggleMode('login')" id="tab-login" class="flex-1 py-2.5 rounded-lg font-medium transition bg-brand-600 text-white shadow-lg">ログイン</button>
-                <button onclick="auth.toggleMode('register')" id="tab-register" class="flex-1 py-2.5 rounded-lg font-medium text-slate-400 hover:text-white transition">新規登録</button>
+            <div class="flex bg-black/20 p-1 rounded-lg mb-6">
+                <button onclick="auth.toggleMode('login')" id="tab-login" class="flex-1 py-3 rounded-md font-medium transition text-gold-400 bg-white/10">ログイン</button>
+                <button onclick="auth.toggleMode('register')" id="tab-register" class="flex-1 py-3 rounded-md opacity-50">新規登録</button>
             </div>
-
             <form id="auth-form" class="space-y-4">
-                <input type="text" id="auth-user" placeholder="ユーザー名" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-white focus:border-brand-500 outline-none transition" required>
+                <input type="text" id="auth-user" class="w-full input-field rounded-lg p-4 outline-none" placeholder="ユーザーID" required>
+                <input type="email" id="auth-email" class="w-full input-field rounded-lg p-4 outline-none hidden" placeholder="email@example.com">
+                <input type="password" id="auth-pass" class="w-full input-field rounded-lg p-4 outline-none" placeholder="パスワード" required>
+                <select id="auth-role" class="w-full input-field rounded-lg p-4 outline-none hidden">
+                    <option value="attendee">参加者</option><option value="organizer">主催者</option>
+                </select>
+                <button type="submit" id="btn-auth" class="w-full btn-gold py-4 rounded-lg font-bold shadow-lg">入場する</button>
                 
-                <div id="field-email" class="hidden">
-                    <input type="email" id="auth-email" placeholder="メールアドレス" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-white focus:border-brand-500 outline-none transition">
-                </div>
-
-                <input type="password" id="auth-pass" placeholder="パスワード" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-white focus:border-brand-500 outline-none transition" required>
-                
-                <div id="role-selector" class="hidden">
-                    <select id="auth-role" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-white outline-none">
-                        <option value="attendee">一般参加者 (Ticket User)</option>
-                        <option value="organizer">イベント主催者 (Organizer)</option>
-                    </select>
-                </div>
-
-                <button type="submit" id="btn-auth" class="w-full bg-gradient-to-r from-brand-600 to-purple-600 py-4 rounded-xl font-bold text-white shadow-lg hover:shadow-brand-500/25 transition active:scale-95">
-                    開始する
-                </button>
-                <div id="auth-error-box" class="hidden mt-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
-                    <p id="auth-msg" class="text-center text-xs text-red-200"></p>
+                <div id="auth-error-box" class="hidden text-center bg-red-500/10 border border-red-500/20 p-3 rounded-lg mt-4">
+                    <p id="auth-msg" class="text-xs text-red-400 font-bold"></p>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- 2. MAIN APP LAYOUT -->
-    <div id="app-layout" class="flex w-full h-full hidden opacity-0 transition-opacity duration-500">
-        <!-- PC Sidebar -->
-        <aside class="hidden md:flex flex-col w-64 glass-panel border-r border-white/5 z-20">
-            <div class="p-6">
-                <h1 class="text-2xl font-bold tracking-wider text-white">Nex<span class="text-brand-500">Ticket</span></h1>
-            </div>
-            <nav class="flex-1 px-4 space-y-2" id="sidebar-nav"></nav>
-            <div class="p-4 border-t border-white/5">
-                <div class="flex items-center gap-3 px-4 py-2 text-slate-400">
-                    <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white"><i class="fa-solid fa-user"></i></div>
-                    <div class="flex-1 truncate">
-                        <p class="text-sm text-white font-medium" id="sidebar-user">User</p>
-                        <p class="text-xs">Account</p>
-                    </div>
-                    <button onclick="auth.logout()" class="hover:text-red-400 transition" title="ログアウト"><i class="fa-solid fa-right-from-bracket"></i></button>
+    <!-- MAIN -->
+    <div id="app-layout" class="flex w-full h-full hidden opacity-0 transition-opacity duration-1000">
+        <aside class="hidden md:flex flex-col w-72 glass-panel border-r border-r-white/5 z-20">
+            <div class="p-8 border-b border-white/5 flex justify-between items-center">
+                <div class="flex items-center gap-3 text-gold-400">
+                    <svg class="w-8 h-8"><use href="#icon-propylaea"/></svg>
+                    <h1 class="text-lg font-serif font-bold tracking-widest text-white">PROPYLAEA</h1>
                 </div>
+                <button onclick="ui.toggleTheme()"><i class="fa-solid fa-circle-half-stroke opacity-70"></i></button>
+            </div>
+            <nav class="flex-1 px-4 py-6 space-y-2" id="sidebar-nav"></nav>
+            <div class="p-6 border-t border-white/5 flex items-center gap-4">
+                <i class="fa-solid fa-user text-gold-400"></i>
+                <span id="sidebar-user" class="truncate flex-1">User</span>
+                <button onclick="auth.logout()" class="hover:text-red-400"><i class="fa-solid fa-power-off"></i></button>
             </div>
         </aside>
 
-        <!-- Mobile Header -->
-        <header class="md:hidden fixed top-0 w-full h-16 glass-panel border-b border-white/5 flex items-center justify-between px-4 z-30 backdrop-blur-md">
-            <h1 class="text-xl font-bold">Nex<span class="text-brand-500">Ticket</span></h1>
-            <button onclick="auth.logout()" class="text-slate-400 hover:text-white" title="ログアウト"><i class="fa-solid fa-right-from-bracket"></i></button>
-        </header>
-
-        <!-- Content Area -->
-        <main class="flex-1 relative overflow-hidden bg-slate-900/50 w-full pt-16 md:pt-0 pb-24 md:pb-0">
-            <div id="content-container" class="h-full overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth"></div>
+        <main class="flex-1 relative overflow-hidden w-full pt-16 md:pt-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]">
+            <header class="md:hidden fixed top-0 w-full h-16 glass-panel flex items-center justify-between px-6 z-30">
+                <div class="flex items-center gap-2 text-gold-400">
+                    <svg class="w-6 h-6"><use href="#icon-propylaea"/></svg>
+                    <h1 class="text-lg font-serif font-bold text-white">PROPYLAEA</h1>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="ui.toggleTheme()"><i class="fa-solid fa-circle-half-stroke"></i></button>
+                    <button onclick="auth.logout()"><i class="fa-solid fa-right-from-bracket"></i></button>
+                </div>
+            </header>
+            <div id="content-container" class="h-full overflow-y-auto p-4 md:p-10 space-y-8 scroll-smooth pb-32"></div>
         </main>
-
-        <!-- Mobile Bottom Nav -->
-        <nav class="md:hidden fixed bottom-0 w-full h-20 glass-panel border-t border-white/5 flex justify-around items-center z-30 pb-4" id="mobile-nav"></nav>
+        <nav class="md:hidden fixed bottom-0 w-full h-20 glass-panel flex justify-around items-center z-30 pb-4" id="mobile-nav"></nav>
     </div>
 
     <!-- TEMPLATES -->
-
-    <!-- ORGANIZER DASHBOARD -->
     <template id="tmpl-organizer">
-        <div class="max-w-6xl mx-auto space-y-8 animate-fade-in pb-20">
-            <header class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-                <div>
-                    <h2 class="text-3xl font-bold text-white mb-1">イベント管理</h2>
-                    <p class="text-slate-400">イベントの作成とチケットの発行・状況確認を行います</p>
-                </div>
-                <button onclick="ui.showModal('modal-create-event')" class="w-full md:w-auto bg-brand-600 hover:bg-brand-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-plus"></i> イベント作成
-                </button>
-            </header>
+        <header class="flex justify-between items-end border-b border-white/10 pb-6">
+            <h2 class="text-3xl font-serif font-bold">イベント管理</h2>
+            <button onclick="ui.showModal('modal-create-event')" class="btn-gold px-6 py-3 rounded-lg font-bold text-sm shadow-lg"><i class="fa-solid fa-plus mr-2"></i>作成</button>
+        </header>
+        <div class="grid grid-cols-2 gap-4">
+            <div class="glass-panel p-6 rounded-xl"><p class="text-xs opacity-50 uppercase">Events</p><h3 class="text-4xl font-serif" id="stats-events">-</h3></div>
+            <div onclick="router.go('scanner')" class="glass-panel p-6 rounded-xl cursor-pointer hover:border-gold-500/50"><p class="text-xs opacity-50 uppercase">Scanner</p><h3 class="text-2xl font-serif">起動</h3></div>
+        </div>
+        <div class="glass-panel rounded-xl p-4">
+            <h3 class="font-bold mb-4 ml-2">開催中のイベント</h3>
+            <div id="org-event-list" class="space-y-4"></div>
+        </div>
+    </template>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="glass-panel p-6 rounded-2xl border-l-4 border-brand-500">
-                    <p class="text-slate-400 text-xs uppercase mb-2 font-bold tracking-wider">Total Events</p>
-                    <h3 class="text-3xl font-bold text-white" id="stats-events">0</h3>
-                </div>
-                <div onclick="router.navigate('scanner')" class="glass-panel p-6 rounded-2xl cursor-pointer hover:bg-white/5 transition border-l-4 border-emerald-500 group">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-emerald-400 text-xs uppercase mb-2 font-bold tracking-wider">Scanner</p>
-                            <h3 class="text-xl font-bold text-white">QRスキャン起動</h3>
-                        </div>
-                        <i class="fa-solid fa-expand text-2xl text-slate-500 group-hover:text-emerald-400 transition"></i>
+    <template id="tmpl-event-detail">
+        <header class="flex items-center gap-4 border-b border-white/10 pb-4">
+            <button onclick="router.back()" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
+            <div><p class="text-[10px] text-gold-400 tracking-widest">DETAIL</p><h2 class="text-2xl font-serif font-bold" id="detail-page-title"></h2></div>
+        </header>
+        <div class="flex flex-col md:flex-row gap-6 h-full">
+            <div class="md:w-1/3 glass-panel p-6 rounded-xl h-fit space-y-4 relative overflow-hidden">
+                <!-- Background Image -->
+                <div id="detail-bg-image" class="absolute inset-0 bg-cover bg-center opacity-20 z-0"></div>
+                <div class="relative z-10 space-y-4">
+                    <div><p class="text-xs opacity-50">Date</p><p class="text-lg" id="detail-page-date"></p></div>
+                    <div><p class="text-xs opacity-50">Location</p><p class="text-lg" id="detail-page-loc"></p></div>
+                    <div class="bg-black/20 p-3 rounded border border-white/5">
+                        <p class="text-xs opacity-50">Configuration</p>
+                        <p class="text-sm font-bold mt-1" id="detail-config-info">-</p>
                     </div>
+                    <button onclick="logic.openIssueModal()" class="w-full btn-gold py-3 rounded-lg font-bold shadow-lg mt-4">チケット発行</button>
                 </div>
             </div>
-
-            <div class="glass-panel rounded-2xl overflow-hidden shadow-xl">
-                <div class="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
-                    <h3 class="font-bold text-lg text-white">イベント一覧</h3>
-                </div>
-                <div id="org-event-list" class="divide-y divide-white/5">
-                    <div class="p-12 text-center text-slate-500">読み込み中...</div>
-                </div>
+            <div class="flex-1 glass-panel rounded-xl overflow-hidden flex flex-col min-h-[400px]">
+                <div class="p-4 bg-white/5 flex justify-between items-center"><h3 class="font-bold">発行済みチケット</h3><button onclick="logic.loadEventDetail()"><i class="fa-solid fa-rotate-right"></i></button></div>
+                <div class="overflow-auto flex-1"><table class="w-full text-left text-sm"><thead class="bg-black/20 text-xs opacity-70"><tr><th class="px-4 py-3">座席</th><th class="px-4 py-3">コード</th><th class="px-4 py-3">所有者</th><th class="px-4 py-3 text-right">通知</th></tr></thead><tbody id="detail-ticket-list" class="divide-y divide-white/5"></tbody></table></div>
             </div>
         </div>
     </template>
 
-    <!-- ATTENDEE DASHBOARD -->
     <template id="tmpl-attendee">
-        <div class="max-w-2xl mx-auto space-y-6 animate-fade-in pb-20">
-            <header>
-                <h2 class="text-3xl font-bold text-white">My Tickets</h2>
-                <p class="text-slate-400">所有しているチケット一覧</p>
-            </header>
-
-            <div class="glass-panel p-6 rounded-2xl border border-brand-500/30 bg-gradient-to-r from-brand-500/10 to-transparent">
-                <h3 class="font-bold text-white mb-3 flex items-center"><i class="fa-solid fa-ticket text-brand-400 mr-2"></i>チケットを受け取る</h3>
-                <form onsubmit="logic.claimTicket(event)" class="flex gap-2">
-                    <input type="text" id="claim-code-input" placeholder="CODE: A1B2" class="flex-1 bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3 text-white uppercase tracking-widest focus:border-brand-500 outline-none transition" required maxlength="16">
-                    <button type="submit" class="bg-brand-600 hover:bg-brand-500 text-white px-6 rounded-xl font-bold shadow-lg transition">追加</button>
-                </form>
-            </div>
-            <div id="my-ticket-list" class="space-y-4"></div>
+        <header class="text-center py-8"><h2 class="text-3xl font-serif font-bold">マイチケット</h2></header>
+        <div class="glass-panel p-6 rounded-xl border border-gold-500/30 flex gap-2">
+            <input type="text" id="claim-code-input" placeholder="コードを入力" class="flex-1 input-field rounded-lg px-4 outline-none">
+            <button onclick="logic.claimTicket()" class="btn-gold px-6 rounded-lg font-bold">受取</button>
         </div>
+        <div id="my-ticket-list" class="space-y-4 mt-6 pb-20"></div>
     </template>
 
-    <!-- SCANNER -->
-    <template id="tmpl-scanner">
-        <div class="h-full flex flex-col max-w-lg mx-auto animate-fade-in pb-10">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold text-white">QR Scanner</h2>
-                <button onclick="router.back()" class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition"><i class="fa-solid fa-times"></i></button>
-            </div>
-            
-            <div class="flex-1 relative bg-black rounded-3xl overflow-hidden border border-slate-700 shadow-2xl min-h-[300px] flex items-center justify-center">
-                <video id="video" playsinline class="absolute inset-0 w-full h-full object-cover"></video>
-                <canvas id="canvas" class="hidden"></canvas>
-                
-                <div class="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
-                    <div class="w-64 h-64 border-2 border-brand-500/50 rounded-2xl relative">
-                        <div class="absolute top-0 w-full h-0.5 bg-brand-500 shadow-[0_0_15px_#6366f1] animate-scan"></div>
-                        <div class="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-brand-500"></div>
-                        <div class="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-brand-500"></div>
-                        <div class="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-brand-500"></div>
-                        <div class="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-brand-500"></div>
-                    </div>
-                </div>
-                
-                <div id="loadingMessage" class="absolute z-20 text-slate-400 text-sm bg-black/50 px-4 py-2 rounded">
-                    <i class="fa-solid fa-camera mr-2"></i>カメラ起動中...
-                </div>
-            </div>
-            
-            <div id="scan-result" class="mt-4 min-h-[100px] glass-panel rounded-2xl p-4 flex items-center justify-center text-center transition-all">
-                <p class="text-slate-500 text-sm">カメラをQRコードに向けてください</p>
-            </div>
-        </div>
-        <style>
-            @keyframes scan { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
-            .animate-scan { animation: scan 2s linear infinite; }
-        </style>
-    </template>
-
-    <!-- TICKET DETAIL -->
     <template id="tmpl-ticket-detail">
-        <div class="h-full flex flex-col items-center justify-center max-w-md mx-auto p-4 animate-fade-in relative pb-20">
-            <button onclick="router.back()" class="absolute top-4 left-4 text-white/70 hover:text-white flex items-center gap-2 z-10 bg-black/20 px-3 py-1 rounded-full backdrop-blur">
-                <i class="fa-solid fa-arrow-left"></i> Back
-            </button>
-            
-            <div class="w-full bg-white text-slate-900 rounded-3xl overflow-hidden shadow-2xl transform transition hover:scale-[1.01] duration-300">
-                <div class="bg-brand-600 p-8 text-white text-center relative overflow-hidden">
-                    <div class="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 rotate-12"></div>
-                    <h2 class="text-2xl font-black uppercase tracking-widest relative z-10 break-words" id="detail-event">EVENT</h2>
-                    <p class="text-indigo-200 text-sm mt-2 font-medium" id="detail-date">DATE</p>
-                    <p class="text-indigo-200 text-xs" id="detail-loc">LOCATION</p>
+        <div class="max-w-md mx-auto relative pb-20">
+            <button onclick="router.back()" class="absolute top-4 left-4 z-10 bg-black/50 px-3 py-1 rounded-full text-white text-xs">BACK</button>
+            <!-- Added pb-12 to ensure bottom part is visible -->
+            <div class="bg-gray-200 text-slate-900 rounded-3xl overflow-hidden shadow-2xl pb-12 relative"> 
+                <div id="ticket-bg-image" class="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none"></div>
+                <div class="bg-black p-8 text-white text-center relative">
+                    <h2 class="text-2xl font-serif font-bold relative z-10 break-words" id="detail-event">EVENT</h2>
+                    <div class="mt-4 text-xs text-slate-400 flex justify-center gap-4"><span id="detail-date">DATE</span><span id="detail-loc">LOC</span></div>
                 </div>
-                
-                <div class="p-8 flex flex-col items-center bg-white relative">
-                    <div class="absolute -left-4 top-[-1rem] w-8 h-8 bg-[#020617] rounded-full"></div>
-                    <div class="absolute -right-4 top-[-1rem] w-8 h-8 bg-[#020617] rounded-full"></div>
-                    <div class="absolute left-4 right-4 top-[-1px] border-t-2 border-dashed border-slate-300"></div>
-
-                    <div class="text-center mb-6 mt-2">
-                        <p class="text-slate-400 text-xs uppercase font-bold tracking-wider">Seat Number</p>
-                        <p class="text-4xl font-black text-slate-800" id="detail-seat">-</p>
-                    </div>
-
-                    <div class="bg-white p-2 border-2 border-slate-900 rounded-xl mb-4 shadow-sm min-h-[196px] min-w-[196px] flex items-center justify-center">
-                        <div id="qrcode-display"></div>
-                    </div>
-                    <p class="text-[10px] text-slate-400 font-mono text-center break-all w-full px-4" id="detail-id">ID</p>
+                <div class="p-8 flex flex-col items-center relative z-10">
+                    <p class="text-xs font-bold text-slate-400 tracking-widest mb-1">SEAT</p>
+                    <p class="text-4xl font-serif font-bold mb-6" id="detail-seat">-</p>
+                    <div class="bg-white p-2 rounded-xl mb-4 shadow-inner"><div id="qrcode-display"></div></div>
+                    <p class="text-xs font-mono text-slate-400 select-all" id="detail-id">ID</p>
                 </div>
-                <div id="detail-status" class="bg-slate-100 p-4 text-center text-sm font-bold text-slate-500 border-t border-slate-200">VALID</div>
+                <div id="detail-status" class="bg-slate-300 p-4 text-center text-xs font-bold tracking-widest relative z-10">VALID</div>
             </div>
         </div>
     </template>
 
-    <!-- MODAL: CREATE EVENT -->
-    <div id="modal-create-event" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-opacity">
-        <div class="w-full max-w-md glass-panel bg-slate-900 rounded-2xl p-6 shadow-2xl border border-white/10">
-            <h3 class="text-xl font-bold text-white mb-4">新規イベント作成</h3>
+    <template id="tmpl-scanner">
+        <div class="max-w-md mx-auto h-full flex flex-col">
+            <button onclick="router.back()" class="mb-4 w-8 h-8 bg-white/10 rounded-full flex items-center justify-center"><i class="fa-solid fa-times"></i></button>
+            <div class="flex-1 bg-black rounded-3xl overflow-hidden relative border border-white/10 min-h-[300px] flex items-center justify-center">
+                <video id="video" autoplay muted playsinline class="absolute inset-0 w-full h-full object-cover"></video>
+                <canvas id="canvas" class="hidden"></canvas>
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10"><div id="scan-frame" class="w-64 h-64 border-2 border-gold-400/50 rounded-2xl relative"><div class="absolute top-0 w-full h-0.5 bg-gold-400 animate-[scan_2s_infinite]"></div></div></div>
+            </div>
+            <div id="scan-result" class="mt-4 min-h-[100px] glass-panel rounded-2xl p-4 flex items-center justify-center text-center"><p class="text-xs opacity-50">QRをスキャン</p></div>
+        </div>
+        <style>@keyframes scan { 0% {top:0;opacity:0} 10% {opacity:1} 90% {opacity:1} 100% {top:100%;opacity:0} }</style>
+    </template>
+
+    <!-- MODALS -->
+    <!-- Create Event Modal -->
+    <div id="modal-create-event" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
+        <div class="w-full max-w-md glass-panel rounded-2xl p-8 shadow-2xl my-auto">
+            <h3 class="text-xl font-bold mb-6">新規イベント作成</h3>
             <form onsubmit="logic.createEvent(event)" class="space-y-4">
-                <input type="text" id="new-evt-name" placeholder="イベント名" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:border-brand-500 outline-none" required>
-                <input type="date" id="new-evt-date" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:border-brand-500 outline-none">
-                <input type="text" id="new-evt-loc" placeholder="開催場所" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:border-brand-500 outline-none">
-                <div class="flex gap-2 pt-2">
-                    <button type="button" onclick="ui.closeModal('modal-create-event')" class="flex-1 py-3 text-slate-400 hover:text-white transition">キャンセル</button>
-                    <button type="submit" class="flex-1 py-3 bg-brand-600 hover:bg-brand-500 rounded-lg text-white font-bold transition">作成</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL: ISSUE TICKET (Batch Issue) -->
-    <div id="modal-issue-ticket" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-opacity">
-        <div class="w-full max-w-md glass-panel bg-slate-900 rounded-2xl p-6 shadow-2xl border border-white/10 max-h-[90vh] overflow-y-auto">
-            <h3 class="text-xl font-bold text-white mb-1">チケット発行設定</h3>
-            <p class="text-xs text-slate-400 mb-4">指定範囲からランダムに座席を決定して発行します</p>
-            
-            <form onsubmit="logic.issueRandomTicket(event)" class="space-y-4">
-                <input type="hidden" id="issue-event-id">
+                <input type="text" id="new-evt-name" placeholder="イベント名" class="w-full input-field rounded-lg p-3 outline-none" required>
+                <input type="date" id="new-evt-date" class="w-full input-field rounded-lg p-3 outline-none">
+                <input type="text" id="new-evt-loc" placeholder="開催場所" class="w-full input-field rounded-lg p-3 outline-none">
+                <input type="url" id="new-evt-img" placeholder="画像URL (任意)" class="w-full input-field rounded-lg p-3 outline-none text-xs">
                 
-                <div class="bg-slate-800/50 p-3 rounded-xl border border-white/5">
-                    <label class="text-xs text-brand-400 font-bold uppercase mb-2 block">発行枚数</label>
-                    <div class="flex items-center gap-2">
-                        <input type="number" id="issue-qty" value="1" min="1" max="50" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-center text-lg font-bold">
-                        <span class="text-sm text-slate-400">枚</span>
+                <div class="p-4 bg-white/5 rounded-lg border border-white/5 space-y-3">
+                    <p class="text-xs text-gold-400 font-bold uppercase mb-2">座席タイプ</p>
+                    <div class="flex gap-4 mb-2">
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="seatType" value="designated" checked onchange="ui.toggleCreateSeatConfig()" class="accent-gold-400"> 指定席</label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="seatType" value="free" onchange="ui.toggleCreateSeatConfig()" class="accent-gold-400"> 自由席</label>
                     </div>
-                </div>
 
-                <div class="flex gap-4">
-                    <div class="flex-1 bg-slate-800/50 p-3 rounded-xl border border-white/5">
-                        <label class="text-xs text-brand-400 font-bold uppercase mb-2 block">行 (A~Z)</label>
-                        <div class="flex gap-2 items-center">
-                            <select id="seat-row-start" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-center"></select>
-                            <span class="text-slate-500">~</span>
-                            <select id="seat-row-end" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-center"></select>
+                    <!-- Designated Config -->
+                    <div id="conf-designated" class="space-y-2">
+                        <div class="flex gap-2">
+                            <select id="conf-row-start" class="flex-1 input-field rounded p-2 text-center"></select> <span class="opacity-50">-</span> <select id="conf-row-end" class="flex-1 input-field rounded p-2 text-center"></select>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="number" id="conf-col-max" value="20" class="flex-1 input-field rounded p-2 text-center" placeholder="列数"> <span class="text-xs opacity-50 self-center">列まで</span>
                         </div>
                     </div>
-                    <div class="flex-1 bg-slate-800/50 p-3 rounded-xl border border-white/5">
-                        <label class="text-xs text-brand-400 font-bold uppercase mb-2 block">列 (No.)</label>
-                        <div class="flex gap-2 items-center">
-                            <input type="number" id="seat-col-start" value="1" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-center">
-                            <span class="text-slate-500">~</span>
-                            <input type="number" id="seat-col-end" value="10" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-center">
+
+                    <!-- Free Seat Config -->
+                    <div id="conf-free" class="hidden space-y-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs">定員(枚数上限):</span>
+                            <input type="number" id="conf-capacity" value="100" class="flex-1 input-field rounded p-2 text-center" placeholder="定員">
                         </div>
                     </div>
                 </div>
-
-                <div>
-                    <label class="text-xs text-slate-400 mb-1 block">除外する席 (カンマ区切り)</label>
-                    <input type="text" id="seat-exclude" placeholder="例: A-1, B-5" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white text-sm focus:border-brand-500 outline-none">
-                </div>
-
-                <div class="flex gap-2 pt-2">
-                    <button type="button" onclick="ui.closeModal('modal-issue-ticket')" class="flex-1 py-3 text-slate-400 hover:text-white transition">キャンセル</button>
-                    <button type="submit" class="flex-1 py-3 bg-gradient-to-r from-brand-600 to-purple-600 hover:opacity-90 rounded-lg text-white font-bold transition shadow-lg">発行する</button>
-                </div>
+                
+                <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="new-evt-public" class="accent-gold-400"> ストアに公開する</label>
+                <div class="flex gap-2 pt-2"><button type="button" onclick="ui.closeModal('modal-create-event')" class="flex-1 py-3 opacity-50">キャンセル</button><button type="submit" class="flex-1 btn-gold py-3 rounded-lg font-bold">作成</button></div>
             </form>
         </div>
     </div>
 
-    <!-- MODAL: ISSUE RESULT (List) -->
-    <div id="modal-issue-result" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-opacity">
-        <div class="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl text-slate-900 text-center animate-fade-in flex flex-col max-h-[80vh]">
-            <div class="w-12 h-12 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-2 text-xl shadow-sm">
-                <i class="fa-solid fa-check"></i>
-            </div>
-            <h3 class="text-xl font-bold mb-1">発行完了</h3>
-            <p class="text-slate-500 text-sm mb-4">以下のコードを配布してください</p>
-            
-            <div id="res-list-container" class="flex-1 overflow-y-auto space-y-3 mb-4 pr-2">
-                <!-- JS Generated -->
-            </div>
+    <!-- Issue Ticket Modal -->
+    <div id="modal-issue-ticket" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="w-full max-w-md glass-panel rounded-2xl p-8 shadow-2xl">
+            <h3 class="text-xl font-bold mb-1">チケット発行</h3>
+            <p class="text-xs opacity-50 mb-4" id="issue-modal-desc">設定</p>
+            <form onsubmit="logic.issueTicket(event)" class="space-y-4">
+                <div class="bg-white/5 p-4 rounded-xl border border-white/5 flex justify-between items-center">
+                    <label class="text-xs font-bold text-gold-400">発行枚数</label>
+                    <div class="flex items-center gap-2"><input type="number" id="issue-qty" value="1" min="1" max="50" class="w-16 input-field rounded p-2 text-center font-bold outline-none"> <span class="text-xs">枚</span></div>
+                </div>
+                
+                <div id="issue-designated-opts" class="hidden space-y-4">
+                    <div class="flex gap-2 text-sm">
+                        <div class="flex-1">
+                            <label class="text-xs opacity-50 block mb-1">行</label>
+                            <div class="flex gap-1"><select id="issue-row-s" class="input-field rounded w-full"></select>-<select id="issue-row-e" class="input-field rounded w-full"></select></div>
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-xs opacity-50 block mb-1">列</label>
+                            <div class="flex gap-1"><input type="number" id="issue-col-s" value="1" class="input-field rounded w-full p-1 text-center">-<input type="number" id="issue-col-e" value="10" class="input-field rounded w-full p-1 text-center"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs opacity-50 block mb-1">除外座席 (カンマ区切り)</label>
+                        <input type="text" id="issue-exclude" class="w-full input-field rounded p-2 text-sm" placeholder="A-1, B-5">
+                    </div>
+                </div>
 
-            <button onclick="ui.closeModal('modal-issue-result')" class="w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition">閉じる</button>
+                <div id="issue-limit-info" class="text-xs text-right opacity-70"></div>
+
+                <button type="submit" class="w-full btn-gold py-3 rounded-lg font-bold shadow-lg">発行する</button>
+            </form>
         </div>
     </div>
 
-    <!-- MODAL: VIEW EVENT TICKETS (New) -->
-    <div id="modal-view-tickets" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-opacity">
-        <div class="w-full max-w-lg bg-white rounded-2xl p-6 shadow-2xl text-slate-900 animate-fade-in flex flex-col max-h-[90vh]">
-            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
-                <h3 class="text-lg font-bold">発行済みチケット一覧</h3>
-                <button onclick="ui.closeModal('modal-view-tickets')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times"></i></button>
-            </div>
-            
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm text-left">
-                    <thead class="text-xs text-slate-500 uppercase bg-slate-50">
-                        <tr>
-                            <th class="px-4 py-3">座席</th>
-                            <th class="px-4 py-3">コード</th>
-                            <th class="px-4 py-3">所有者</th>
-                            <th class="px-4 py-3">状態</th>
-                        </tr>
-                    </thead>
-                    <tbody id="view-tickets-body" class="divide-y divide-slate-100">
-                        <tr><td colspan="4" class="px-4 py-4 text-center text-slate-400">読み込み中...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+    <div id="modal-result" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+        <div class="w-full max-w-md glass-panel rounded-2xl p-8 flex flex-col max-h-[80vh]">
+            <h3 class="text-xl font-bold text-center mb-4 text-emerald-400">発行完了</h3>
+            <div id="result-list" class="flex-1 overflow-y-auto space-y-2 mb-4"></div>
+            <button onclick="ui.closeModal('modal-result'); logic.loadEventDetail();" class="py-3 bg-white/10 rounded-lg">閉じる</button>
         </div>
     </div>
 
     <script>
         const API_URL = 'https://ethimp0.shop/api5.php';
-        
-        async function apiRequest(action, body = {}) {
-            try {
-                // If it's a GET request, append params to URL
-                let url = `${API_URL}?action=${action}`;
-                let options = {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                };
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxrB2fSJ7IEzKM3Xa2i_My9ikRDmkKI2TmRkX1U2nH2cwcuLQWA02ponvYUG0B1yLV2Tw/exec';
 
-                // Special handling for GET requests if needed, but keeping unified POST for simplicity mostly.
-                // Exception: get_event_tickets was defined as GET in backend
-                if (action === 'get_event_tickets' || action === 'get_events' || action === 'my_tickets') {
-                    // Although we can use POST for everything, let's respect GET if we want.
-                    // For now, keeping POST mostly for consistency except where explicitly GET.
-                    if(action === 'get_event_tickets') {
-                        options.method = 'GET';
-                        delete options.body;
-                        url += `&eventId=${body.eventId}`;
-                    }
-                }
-
-                const res = await fetch(url, options);
-                
-                if (!res.ok) {
-                    throw new Error(`Server Error: ${res.status}`);
-                }
-
-                const text = await res.text();
-                try {
-                    return JSON.parse(text);
-                } catch (e) {
-                    const jsonMatch = text.match(/\{.*\}/);
-                    if(jsonMatch) return JSON.parse(jsonMatch[0]);
-                    console.error("Raw response:", text);
-                    throw new Error("サーバー応答が不正です。");
-                }
-            } catch (e) {
-                console.error("API Error:", e);
-                throw e;
-            }
+        async function api(act, body={}) {
+            let url = `${API_URL}?action=${act}`;
+            if(act === 'get_event_tickets') url += `&eventId=${body.eventId}`;
+            const res = await fetch(url, { method: 'POST', body: JSON.stringify(body) });
+            const json = await res.json();
+            if(!json.success && !json.status && !json.events && !json.tickets) throw new Error(json.error || 'Error');
+            return json;
         }
 
-        // --- APP LOGIC ---
-        let currentUser = null;
-        let scanActive = false;
-        let videoStream = null;
+        // Fixed: added scanActive, videoStream to global definition
+        let user = null, curEvt = null, eventTickets = [], scanActive = false, videoStream = null;
 
         const auth = {
             mode: 'login',
-            toggleMode: (mode) => {
-                auth.mode = mode;
-                const isLogin = mode === 'login';
-                document.getElementById('tab-login').className = isLogin ? 'flex-1 py-2.5 rounded-lg font-medium bg-brand-600 text-white shadow-lg transition' : 'flex-1 py-2.5 rounded-lg font-medium text-slate-400 hover:text-white transition';
-                document.getElementById('tab-register').className = !isLogin ? 'flex-1 py-2.5 rounded-lg font-medium bg-brand-600 text-white shadow-lg transition' : 'flex-1 py-2.5 rounded-lg font-medium text-slate-400 hover:text-white transition';
-                document.getElementById('btn-auth').textContent = isLogin ? 'ログイン' : 'アカウント作成';
-                document.getElementById('role-selector').classList.toggle('hidden', isLogin);
-                document.getElementById('field-email').classList.toggle('hidden', isLogin);
-                document.getElementById('auth-error-box').classList.add('hidden');
+            toggleMode: (m) => {
+                auth.mode = m;
+                document.getElementById('tab-login').className = m==='login'?'flex-1 py-3 rounded text-gold-400 bg-white/10':'flex-1 py-3 opacity-50';
+                document.getElementById('tab-register').className = m==='register'?'flex-1 py-3 rounded text-gold-400 bg-white/10':'flex-1 py-3 opacity-50';
+                document.getElementById('btn-auth').textContent = m==='login'?'入場':'登録';
+                const ef = document.getElementById('auth-email'), rs = document.getElementById('auth-role');
+                if(ef) ef.classList.toggle('hidden', m==='login');
+                if(rs) rs.classList.toggle('hidden', m==='login');
             },
             submit: async (e) => {
                 e.preventDefault();
-                const btn = document.getElementById('btn-auth');
-                const msg = document.getElementById('auth-msg');
-                const errBox = document.getElementById('auth-error-box');
-                const user = document.getElementById('auth-user').value;
-                const email = document.getElementById('auth-email').value;
-                const pass = document.getElementById('auth-pass').value;
-                const role = document.getElementById('auth-role').value;
-
-                btn.classList.add('opacity-50', 'pointer-events-none');
-                btn.textContent = '処理中...';
-                msg.textContent = '';
-                errBox.classList.add('hidden');
-
+                const u = document.getElementById('auth-user').value, p = document.getElementById('auth-pass').value;
                 try {
-                    const action = auth.mode; 
-                    const body = auth.mode === 'register' ? { username: user, email, password: pass, role } : { username: user, password: pass };
-                    const data = await apiRequest(action, body);
-
-                    if (!data.success && !data.user) throw new Error(data.error || '不明なエラーが発生しました');
-
-                    if (auth.mode === 'register') {
-                        alert('登録完了！ログインしてください。');
-                        auth.toggleMode('login');
-                    } else {
-                        currentUser = data.user;
-                        localStorage.setItem('nex_user_v2', JSON.stringify(currentUser));
-                        app.init();
-                    }
-                } catch (err) {
-                    msg.innerHTML = `<strong>エラー:</strong><br>${err.message}`;
-                    errBox.classList.remove('hidden');
-                } finally {
-                    btn.classList.remove('opacity-50', 'pointer-events-none');
-                    btn.textContent = auth.mode === 'login' ? 'ログイン' : 'アカウント作成';
+                    const res = await api(auth.mode, { username: u, password: p, email: document.getElementById('auth-email').value, role: document.getElementById('auth-role').value });
+                    if(auth.mode === 'register') { alert('登録完了'); auth.toggleMode('login'); }
+                    else { user = res.user; localStorage.setItem('prop_u', JSON.stringify(user)); app.init(); }
+                } catch(err) {
+                    const msgEl = document.getElementById('auth-msg');
+                    if (msgEl) msgEl.textContent = err.message;
+                    document.getElementById('auth-error-box').classList.remove('hidden');
                 }
             },
-            logout: () => {
-                currentUser = null;
-                localStorage.removeItem('nex_user_v2');
-                location.reload();
-            }
+            logout: () => { localStorage.removeItem('prop_u'); location.reload(); }
         };
 
         const app = {
             init: () => {
-                const saved = localStorage.getItem('nex_user_v2');
-                if (saved) {
-                    try {
-                        currentUser = JSON.parse(saved);
-                    } catch(e) {
-                        localStorage.removeItem('nex_user_v2');
-                    }
-                }
-
-                if (!currentUser) {
-                    document.getElementById('view-auth').classList.remove('hidden');
-                    return;
-                }
-
-                // Logged in
+                user = JSON.parse(localStorage.getItem('prop_u'));
+                if(!user) { document.getElementById('view-auth').classList.remove('hidden'); return; }
                 document.getElementById('view-auth').classList.add('hidden');
-                const layout = document.getElementById('app-layout');
-                layout.classList.remove('hidden');
-                setTimeout(() => layout.classList.remove('opacity-0'), 100);
-
-                ui.setupNav();
-                ui.populateSeatOptions();
-                router.navigate('dashboard');
-                document.getElementById('sidebar-user').textContent = currentUser.username;
+                document.getElementById('app-layout').classList.remove('hidden');
+                setTimeout(()=>document.getElementById('app-layout').classList.remove('opacity-0'),10);
+                
+                document.getElementById('sidebar-user').textContent = user.username;
+                ui.initNav();
+                ui.popOpts();
+                router.go('dashboard');
+                
+                const th = localStorage.getItem('theme') || 'dark';
+                document.documentElement.setAttribute('data-theme', th);
             }
         };
 
         const router = {
-            current: null,
-            history: [],
-            navigate: (view) => {
-                router.current = view;
-                router.history.push(view);
-                
-                const container = document.getElementById('content-container');
-                container.innerHTML = ''; 
-                logic.stopScanner();
+            go: (view, params) => {
+                const c = document.getElementById('content-container'); c.innerHTML = '';
+                logic.stopScanner(); 
 
-                if (view === 'dashboard') {
-                    if (currentUser.role === 'organizer') {
-                        container.appendChild(document.getElementById('tmpl-organizer').content.cloneNode(true));
-                        logic.loadOrganizerEvents();
-                    } else {
-                        container.appendChild(document.getElementById('tmpl-attendee').content.cloneNode(true));
-                        logic.loadMyTickets();
-                    }
-                } else if (view === 'scanner') {
-                    container.appendChild(document.getElementById('tmpl-scanner').content.cloneNode(true));
-                    setTimeout(logic.startScanner, 300); 
-                } else if (view === 'ticket-detail') {
-                    container.appendChild(document.getElementById('tmpl-ticket-detail').content.cloneNode(true));
+                if(view==='dashboard') c.appendChild(document.getElementById(user.role==='organizer'?'tmpl-organizer':'tmpl-attendee').content.cloneNode(true));
+                if(view==='scanner') { 
+                    c.appendChild(document.getElementById('tmpl-scanner').content.cloneNode(true)); 
+                    setTimeout(logic.scanStart, 300); 
                 }
-                ui.updateNavState(view);
+                if(view==='detail') { c.appendChild(document.getElementById('tmpl-event-detail').content.cloneNode(true)); logic.loadEventDetail(params); }
+                if(view==='ticket') { c.appendChild(document.getElementById('tmpl-ticket-detail').content.cloneNode(true)); logic.renderTicket(params); }
+                
+                if(view==='dashboard') logic.loadDash();
             },
-            back: () => {
-                router.history.pop();
-                const prev = router.history.pop() || 'dashboard';
-                router.navigate(prev);
-            }
+            back: () => router.go('dashboard'),
+            navigate: (view, params) => router.go(view, params)
         };
 
         const ui = {
-            setupNav: () => {
-                const pcNav = document.getElementById('sidebar-nav');
-                const mbNav = document.getElementById('mobile-nav');
-                let items = [];
-                if (currentUser.role === 'organizer') {
-                    items = [{ id: 'dashboard', icon: 'fa-calendar', label: 'イベント' }, { id: 'scanner', icon: 'fa-expand', label: 'スキャナー' }];
-                } else {
-                    items = [{ id: 'dashboard', icon: 'fa-ticket', label: 'チケット' }];
-                }
-                pcNav.innerHTML = items.map(i => `<button onclick="router.navigate('${i.id}')" id="nav-pc-${i.id}" class="sidebar-item w-full text-left px-4 py-3 rounded-lg text-slate-400 hover:bg-white/5 transition flex items-center gap-3"><i class="fa-solid ${i.icon} w-6 text-center"></i> ${i.label}</button>`).join('');
-                mbNav.innerHTML = items.map(i => `<button onclick="router.navigate('${i.id}')" id="nav-mb-${i.id}" class="flex flex-col items-center gap-1 text-slate-400 hover:text-white p-2 w-full"><i class="fa-solid ${i.icon} text-xl"></i> <span class="text-[10px]">${i.label}</span></button>`).join('');
-            },
-            updateNavState: (view) => {
-                document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
-                const pcActive = document.getElementById(`nav-pc-${view}`);
-                if (pcActive) pcActive.classList.add('active');
-            },
             showModal: (id) => document.getElementById(id).classList.remove('hidden'),
             closeModal: (id) => document.getElementById(id).classList.add('hidden'),
-            populateSeatOptions: () => {
-                const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-                const options = alphabet.map(char => `<option value="${char}">${char}</option>`).join("");
-                const startSel = document.getElementById('seat-row-start');
-                const endSel = document.getElementById('seat-row-end');
-                if(startSel && endSel) {
-                    startSel.innerHTML = options;
-                    endSel.innerHTML = options;
-                    startSel.value = 'A';
-                    endSel.value = 'C';
+            toggleTheme: () => {
+                const n = document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+                document.documentElement.setAttribute('data-theme', n); localStorage.setItem('theme', n);
+            },
+            initNav: () => {
+                const links = user.role==='organizer' 
+                    ? [{l:'ダッシュボード',i:'fa-chart-pie',a:()=>router.go('dashboard')}, {l:'スキャナー',i:'fa-expand',a:()=>router.go('scanner')}]
+                    : [{l:'マイチケット',i:'fa-ticket',a:()=>router.go('dashboard')}];
+                const gen = (p) => {
+                    const el = document.getElementById(p); el.innerHTML = '';
+                    links.forEach(x => {
+                        const b = document.createElement('button'); b.className = p.includes('side') ? 'w-full text-left px-4 py-3 opacity-70 hover:opacity-100 flex gap-3' : 'flex flex-col items-center opacity-70';
+                        b.innerHTML = `<i class="fa-solid ${x.i}"></i> <span>${x.l}</span>`; b.onclick = x.a; el.appendChild(b);
+                    });
+                };
+                gen('sidebar-nav'); gen('mobile-nav');
+            },
+            popOpts: () => {
+                const az = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(x=>`<option>${x}</option>`).join("");
+                const ids = ['conf-row-start', 'conf-row-end', 'issue-row-s', 'issue-row-e'];
+                ids.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) { el.innerHTML=az; if(id.endsWith('start')||id.endsWith('s')) el.value='A'; else el.value='C'; }
+                });
+            },
+            toggleCreateSeatConfig: () => {
+                const type = document.querySelector('input[name="seatType"]:checked').value;
+                document.getElementById('conf-designated').classList.toggle('hidden', type !== 'designated');
+                document.getElementById('conf-free').classList.toggle('hidden', type !== 'free');
+            },
+            setScanStatus: (status) => {
+                const frame = document.getElementById('scan-frame');
+                const line = document.getElementById('scan-line');
+                if(!frame) return;
+                if (status === 'default') {
+                    frame.className = "w-64 h-64 border-2 border-white/50 rounded-2xl relative transition-all duration-300";
+                    line.className = "absolute top-0 w-full h-0.5 bg-gold-400 shadow-[0_0_20px_#D4AF37] animate-scan";
+                } else if (status === 'success') {
+                    frame.className = "w-64 h-64 border-4 border-emerald-500 rounded-2xl relative transition-all duration-300 shadow-[0_0_50px_#10b981]";
+                    line.className = "hidden";
+                } else if (status === 'error') {
+                    frame.className = "w-64 h-64 border-4 border-red-500 rounded-2xl relative transition-all duration-300 shadow-[0_0_50px_#ef4444]";
+                    line.className = "hidden";
                 }
             }
         };
 
         const logic = {
-            loadOrganizerEvents: async () => {
-                const list = document.getElementById('org-event-list');
-                if(!list) return;
-                try {
-                    const data = await apiRequest('get_events');
-                    document.getElementById('stats-events').textContent = data.events.length;
-                    list.innerHTML = data.events.length ? data.events.map(e => `
-                        <div class="p-6 hover:bg-white/5 transition flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group border-b border-white/5 last:border-0">
-                            <div class="flex-1">
-                                <h4 class="font-bold text-lg text-white group-hover:text-brand-400 transition">${e.eventName}</h4>
-                                <p class="text-sm text-slate-400 mt-1"><i class="fa-regular fa-clock mr-1"></i> ${e.eventDate || 'TBD'} <span class="mx-2 opacity-50">|</span> <i class="fa-solid fa-location-dot mr-1"></i> ${e.eventLocation || 'Unknown'}</p>
-                            </div>
-                            <div class="flex gap-2 w-full md:w-auto">
-                                <button onclick="logic.openIssueModal('${e.id}')" class="flex-1 bg-slate-800 border border-slate-600 px-4 py-2 rounded-lg text-sm hover:bg-brand-600 hover:border-brand-500 hover:text-white transition shadow-md"><i class="fa-solid fa-ticket mr-1"></i>発行</button>
-                                <button onclick="logic.loadEventTickets('${e.id}')" class="flex-1 bg-slate-800 border border-slate-600 px-4 py-2 rounded-lg text-sm hover:bg-emerald-600 hover:border-emerald-500 hover:text-white transition shadow-md"><i class="fa-solid fa-list mr-1"></i>確認</button>
-                            </div>
-                        </div>`).join('') : '<div class="p-12 text-center text-slate-500">イベントがありません</div>';
-                } catch(e) { list.innerHTML = `<div class="p-8 text-center text-red-400">読み込みエラー<br>${e.message}</div>`; }
+            loadDash: async () => {
+                if(user.role==='attendee') {
+                    const res = await api('my_tickets', {userId: user.id});
+                    document.getElementById('my-ticket-list').innerHTML = res.tickets.map(t => {
+                        const cfg = t.seat_config || {}; 
+                        const imgStyle = cfg.imageUrl ? `background-image: url('${cfg.imageUrl}');` : '';
+                        return `<div onclick="router.go('ticket', ${JSON.stringify(t).replace(/"/g, '&quot;')})" class="glass-panel p-4 rounded-xl flex justify-between cursor-pointer hover:border-gold-400 relative overflow-hidden group">
+                            <div class="absolute inset-0 bg-cover bg-center opacity-20 transition group-hover:opacity-30" style="${imgStyle}"></div>
+                            <div class="relative z-10"><h4 class="font-bold">${t.event_name}</h4><p class="text-xs opacity-70">${t.seat_number}</p></div>
+                            <div class="relative z-10 text-right"><span class="px-2 py-1 rounded text-xs ${t.status==='used'?'bg-slate-700':'bg-emerald-900 text-emerald-400'}">${t.status==='used'?'済':'有効'}</span></div>
+                        </div>`;
+                    }).join('');
+                } else {
+                    const res = await api('get_events');
+                    document.getElementById('stats-events').textContent = res.events.length;
+                    document.getElementById('org-event-list').innerHTML = res.events.map(e => {
+                        const cfg = e.seatConfig || {};
+                        const imgStyle = cfg.imageUrl ? `background-image: url('${cfg.imageUrl}');` : '';
+                        const params = {id: e.id, name: e.eventName, date: e.eventDate, loc: e.eventLocation, config: e.seatConfig};
+                        return `<div onclick='router.go("detail", ${JSON.stringify(params)})' class="p-4 hover:bg-white/5 cursor-pointer flex justify-between border-b border-white/5 relative overflow-hidden group">
+                            <div class="absolute inset-0 bg-cover bg-center opacity-0 group-hover:opacity-20 transition" style="${imgStyle}"></div>
+                            <div class="relative z-10"><h4 class="font-bold">${e.eventName}</h4><p class="text-xs opacity-50">${e.eventDate||'-'}</p></div>
+                            <i class="fa-solid fa-chevron-right opacity-30 relative z-10"></i>
+                        </div>`;
+                    }).join('');
+                }
             },
             createEvent: async (e) => {
                 e.preventDefault();
-                const name = document.getElementById('new-evt-name').value;
-                const date = document.getElementById('new-evt-date').value;
-                const loc = document.getElementById('new-evt-loc').value;
-                try {
-                    await apiRequest('create_event', { organizerId: currentUser.id, eventName: name, eventDate: date, eventLocation: loc });
-                    ui.closeModal('modal-create-event');
-                    logic.loadOrganizerEvents();
-                } catch(e) { alert('Failed: ' + e.message); }
+                const type = document.querySelector('input[name="seatType"]:checked').value;
+                const cfg = {
+                    type: type,
+                    imageUrl: document.getElementById('new-evt-img').value,
+                    rows: [document.getElementById('conf-row-start').value, document.getElementById('conf-row-end').value],
+                    colMax: document.getElementById('conf-col-max').value,
+                    capacity: document.getElementById('conf-capacity').value
+                };
+                
+                await api('create_event', {
+                    organizerId: user.id, eventName: document.getElementById('new-evt-name').value, 
+                    eventDate: document.getElementById('new-evt-date').value, eventLocation: document.getElementById('new-evt-loc').value,
+                    isPublic: document.getElementById('new-evt-public').checked, seatConfig: cfg
+                });
+                ui.closeModal('modal-create-event'); logic.loadDash();
             },
-            openIssueModal: (eventId) => {
-                document.getElementById('issue-event-id').value = eventId;
-                document.getElementById('seat-exclude').value = '';
+            loadEventDetail: async (params) => {
+                if(params) curEvt = params;
+                document.getElementById('detail-page-title').textContent = curEvt.name;
+                document.getElementById('detail-page-date').textContent = curEvt.date;
+                document.getElementById('detail-page-loc').textContent = curEvt.loc;
+                
+                const cfg = curEvt.config || {};
+                let info = cfg.type === 'free' ? `自由席 (定員: ${cfg.capacity}枚)` : `指定席 (${cfg.rows?cfg.rows.join('-'):'?'}行, 1-${cfg.colMax}列)`;
+                document.getElementById('detail-config-info').textContent = info;
+                if(cfg.imageUrl) document.getElementById('detail-bg-image').style.backgroundImage = `url('${cfg.imageUrl}')`;
+
+                const res = await api('get_event_tickets', {eventId: curEvt.id});
+                eventTickets = res.tickets || [];
+                document.getElementById('detail-ticket-list').innerHTML = eventTickets.map(t => 
+                    `<tr>
+                        <td class="px-4 py-3 font-bold">${t.seat_number}</td>
+                        <td class="px-4 py-3 font-mono text-xs text-gold-400">${t.claim_code}</td>
+                        <td class="px-4 py-3 text-xs">${t.owner_name||'-'}</td>
+                        <td class="px-4 py-3 text-right">
+                            <button onclick="logic.sendMail('${t.id}', '${t.seat_number}', '${t.claim_code}')" class="${t.mail_sent?'text-emerald-400':'opacity-50 hover:text-gold-400'}"><i class="fa-solid fa-envelope"></i></button>
+                        </td>
+                    </tr>`
+                ).join('');
+            },
+            openIssueModal: () => {
+                document.getElementById('issue-event-id').value = curEvt.id;
                 document.getElementById('issue-qty').value = '1';
+                
+                const cfg = curEvt.config || {};
+                const isFree = cfg.type === 'free';
+                
+                document.getElementById('issue-designated-opts').classList.toggle('hidden', isFree);
+                
+                if(!isFree && cfg.rows) {
+                    ui.popOpts(); 
+                    document.getElementById('issue-row-s').value = cfg.rows[0];
+                    document.getElementById('issue-row-e').value = cfg.rows[1];
+                    document.getElementById('issue-col-e').value = cfg.colMax;
+                }
+                
+                if(isFree) {
+                    const issued = eventTickets.length;
+                    const cap = parseInt(cfg.capacity) || 9999;
+                    const remain = cap - issued;
+                    document.getElementById('issue-limit-info').textContent = `残数: ${remain} / 定員: ${cap}`;
+                    document.getElementById('issue-qty').max = remain;
+                } else {
+                    document.getElementById('issue-limit-info').textContent = '';
+                }
+
                 ui.showModal('modal-issue-ticket');
             },
-            loadEventTickets: async (eventId) => {
-                const tbody = document.getElementById('view-tickets-body');
-                ui.showModal('modal-view-tickets');
-                tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-4 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>読み込み中...</td></tr>';
-                
-                try {
-                    const data = await apiRequest('get_event_tickets', { eventId });
-                    if(!data.tickets || data.tickets.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">発行済みのチケットはありません</td></tr>';
-                        return;
-                    }
-                    tbody.innerHTML = data.tickets.map(t => {
-                        const statusClass = t.status === 'used' ? 'bg-slate-200 text-slate-500' : 'bg-emerald-100 text-emerald-700';
-                        const statusLabel = t.status === 'used' ? '使用済' : '有効';
-                        return `
-                        <tr class="hover:bg-slate-50 transition">
-                            <td class="px-4 py-3 font-bold text-slate-800">${t.seat_number}</td>
-                            <td class="px-4 py-3 font-mono text-xs text-slate-500">${t.claim_code}</td>
-                            <td class="px-4 py-3">
-                                ${t.owner_name ? `<span class="font-medium text-slate-800">${t.owner_name}</span>` : '<span class="text-slate-400 italic">未取得</span>'}
-                            </td>
-                            <td class="px-4 py-3"><span class="px-2 py-1 rounded text-xs font-bold ${statusClass}">${statusLabel}</span></td>
-                        </tr>`;
-                    }).join('');
-                } catch(e) {
-                    tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-red-400">エラー: ${e.message}</td></tr>`;
-                }
-            },
-            issueRandomTicket: async (e) => {
+            issueTicket: async (e) => {
                 e.preventDefault();
-                const eventId = document.getElementById('issue-event-id').value;
-                const rowStart = document.getElementById('seat-row-start').value;
-                const rowEnd = document.getElementById('seat-row-end').value;
-                const colStart = parseInt(document.getElementById('seat-col-start').value);
-                const colEnd = parseInt(document.getElementById('seat-col-end').value);
-                const excludeStr = document.getElementById('seat-exclude').value;
                 const qty = parseInt(document.getElementById('issue-qty').value);
+                const cfg = curEvt.config || {};
+                const isFreeEvent = cfg.type === 'free';
                 
-                let candidates = [];
-                const startCode = Math.min(rowStart.charCodeAt(0), rowEnd.charCodeAt(0));
-                const endCode = Math.max(rowStart.charCodeAt(0), rowEnd.charCodeAt(0));
-                const cMin = Math.min(colStart, colEnd);
-                const cMax = Math.max(colStart, colEnd);
-
-                for(let r = startCode; r <= endCode; r++) {
-                    const rowChar = String.fromCharCode(r);
-                    for(let c = cMin; c <= cMax; c++) candidates.push(`${rowChar}-${c}`);
-                }
-
-                const excludes = excludeStr.split(',').map(s => s.trim().toUpperCase()).filter(s => s);
-                candidates = candidates.filter(seat => !excludes.includes(seat));
-
-                if (candidates.length < qty) {
-                    alert(`指定範囲の座席数が不足しています。(可能: ${candidates.length}, 要求: ${qty})`);
-                    return;
-                }
-
-                for (let i = candidates.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
-                }
-                const selectedSeats = candidates.slice(0, qty);
-
-                try {
-                    const data = await apiRequest('issue_ticket', { eventId, seats: selectedSeats });
-                    if(data.success) {
-                        ui.closeModal('modal-issue-ticket');
-                        const container = document.getElementById('res-list-container');
-                        container.innerHTML = data.tickets.map(t => `
-                            <div class="bg-slate-100 border border-slate-300 rounded-lg p-3 text-left">
-                                <div class="flex justify-between items-center mb-1"><span class="text-xs font-bold text-slate-500 uppercase">Seat</span><span class="text-xs font-bold text-slate-500 uppercase">Code</span></div>
-                                <div class="flex justify-between items-center"><span class="text-lg font-bold text-slate-800">${t.seat}</span><span class="text-lg font-mono font-bold text-slate-800 select-all tracking-wider">${t.claimCode}</span></div>
-                            </div>`).join('');
-                        ui.showModal('modal-issue-result');
-                    } else { alert('発行エラー: ' + (data.error || '不明なエラー')); }
-                } catch(e) { alert('通信エラー: ' + e.message); }
-            },
-            loadMyTickets: async () => {
-                const list = document.getElementById('my-ticket-list');
-                if(!list) return;
-                list.innerHTML = '<div class="text-center py-10 opacity-50"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></div>';
-                try {
-                    const data = await apiRequest('my_tickets', { userId: currentUser.id });
-                    if(!data.tickets || data.tickets.length === 0) {
-                        list.innerHTML = '<div class="text-center py-10 opacity-30 text-slate-400">チケットがありません</div>';
-                        return;
-                    }
-                    list.innerHTML = data.tickets.map(t => `
-                        <div onclick="logic.showTicketDetail(${JSON.stringify(t).replace(/"/g, '&quot;')})" class="ticket-stub p-0 rounded-2xl flex overflow-hidden cursor-pointer hover:brightness-110 transition group shadow-lg">
-                            <div class="w-4 bg-brand-500 ${t.status === 'used' ? 'bg-slate-600' : ''}"></div>
-                            <div class="flex-1 p-5">
-                                <h4 class="font-bold text-lg text-white group-hover:text-brand-300 transition">${t.event_name}</h4>
-                                <div class="flex gap-4 mt-2 text-sm text-slate-400"><span><i class="fa-solid fa-calendar mr-1"></i> ${t.event_date ? t.event_date.split(' ')[0] : 'TBD'}</span><span><i class="fa-solid fa-chair mr-1"></i> ${t.seat_number}</span></div>
-                            </div>
-                            <div class="flex items-center px-6 border-l border-dashed border-white/10"><span class="text-xs font-bold px-3 py-1 rounded-full ${t.status === 'used' ? 'bg-slate-700 text-slate-400' : 'bg-brand-500/20 text-brand-400'}">${t.status === 'used' ? 'USED' : 'SHOW'}</span></div>
-                        </div>`).join('');
-                } catch(e) { list.innerHTML = 'Error: ' + e.message; }
-            },
-            claimTicket: async (e) => {
-                e.preventDefault();
-                const input = document.getElementById('claim-code-input');
-                const code = input.value;
-                if(!code) return;
-                try {
-                    const data = await apiRequest('claim_ticket', { userId: currentUser.id, code });
-                    if(data.success) { alert('チケットを追加しました！'); input.value = ''; logic.loadMyTickets(); }
-                    else { alert('エラー: ' + (data.error || '無効なコード')); }
-                } catch(e) { alert('通信エラー: ' + e.message); }
-            },
-            showTicketDetail: (ticket) => {
-                router.navigate('ticket-detail');
-                // Ensure DOM is ready before drawing QR
-                setTimeout(() => {
-                    document.getElementById('detail-event').textContent = ticket.event_name;
-                    document.getElementById('detail-date').textContent = ticket.event_date || 'TBD';
-                    document.getElementById('detail-loc').textContent = ticket.event_location || '';
-                    document.getElementById('detail-seat').textContent = ticket.seat_number;
-                    document.getElementById('detail-id').textContent = `ID: ${ticket.id}`;
+                let seats = [];
+                if(isFreeEvent) {
+                    const currentCount = eventTickets.length;
+                    const limit = parseInt(cfg.capacity) || 9999;
+                    if(currentCount + qty > limit) { alert(`定員オーバーです (残り: ${limit - currentCount}枚)`); return; }
                     
-                    const statusEl = document.getElementById('detail-status');
-                    statusEl.textContent = ticket.status === 'used' ? "使用済みチケット" : "入場可能です";
-                    statusEl.className = ticket.status === 'used' ? "bg-slate-700 p-4 text-center text-sm font-bold text-slate-400 border-t border-slate-600" : "bg-emerald-100 p-4 text-center text-sm font-bold text-emerald-600 border-t border-emerald-200";
-
-                    const qrContainer = document.getElementById('qrcode-display');
-                    if(qrContainer) {
-                        qrContainer.innerHTML = ''; // Clear Previous
-                        try {
-                            new QRCode(qrContainer, {
-                                text: JSON.stringify({ id: ticket.id }),
-                                width: 196, height: 196, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H
-                            });
-                        } catch (err) { console.error("QR Gen Error", err); }
+                    for(let i=1; i<=qty; i++) seats.push(`自由席 #${currentCount + i}`);
+                } else {
+                    const rS = document.getElementById('issue-row-s').value, rE = document.getElementById('issue-row-e').value;
+                    const cS = parseInt(document.getElementById('issue-col-s').value), cE = parseInt(document.getElementById('issue-col-e').value);
+                    const exStr = document.getElementById('issue-exclude').value;
+                    const ex = exStr ? exStr.split(',').map(s=>s.trim().toUpperCase()) : [];
+                    const existingSeats = eventTickets.map(t => t.seat_number);
+                    
+                    let candidates = [];
+                    const sC = Math.min(rS.charCodeAt(0), rE.charCodeAt(0)), eC = Math.max(rS.charCodeAt(0), rE.charCodeAt(0));
+                    for(let r=sC; r<=eC; r++) {
+                        for(let c=Math.min(cS, cE); c<=Math.max(cS, cE); c++) {
+                            const seat = `${String.fromCharCode(r)}-${c}`;
+                            if(!ex.includes(seat) && !existingSeats.includes(seat)) {
+                                candidates.push(seat);
+                            }
+                        }
                     }
-                }, 300); // 300ms delay to ensure transition finishes
+
+                    if (candidates.length < qty) { alert(`空席が足りません (発行可能: ${candidates.length}席)`); return; }
+                    
+                    for (let i = candidates.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [candidates[i], candidates[j]] = [candidates[j], candidates[i]]; }
+                    seats = candidates.slice(0, qty);
+                }
+
+                try {
+                    const res = await api('issue_ticket', { eventId: curEvt.id, seats: seats, isFreeSeat: isFreeEvent });
+                    ui.closeModal('modal-issue-ticket');
+                    document.getElementById('result-list').innerHTML = res.tickets.map(t => 
+                        `<div class="flex justify-between border-b border-white/10 p-2"><span>${t.seat}</span><span class="font-mono text-gold-400 select-all">${t.claimCode}</span></div>`
+                    ).join('');
+                    ui.showModal('modal-result');
+                } catch(err) { alert(err.message); }
             },
-            
-            // --- jsQR SCANNER LOGIC ---
-            startScanner: () => {
+            sendMail: async (tid, seat, code) => {
+                const email = prompt("送信先メールアドレス:");
+                if(!email) return;
+                try {
+                    await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({email, tickets:[{seat, claimCode: code}]}) });
+                    await api('mark_mail_sent', {ticketId: tid});
+                    alert('送信リクエスト完了');
+                    logic.loadEventDetail(); // Refresh list to show icon
+                } catch(e) { alert('送信失敗'); }
+            },
+            claimTicket: async () => {
+                try {
+                    await api('claim_ticket', {userId: user.id, code: document.getElementById('claim-code-input').value});
+                    alert('取得しました'); logic.loadDash();
+                } catch(e) { alert('コードが無効です'); }
+            },
+            renderTicket: (t) => {
+                document.getElementById('detail-event').textContent = t.event_name;
+                document.getElementById('detail-date').textContent = t.event_date;
+                document.getElementById('detail-loc').textContent = t.event_location;
+                document.getElementById('detail-seat').textContent = t.seat_number;
+                document.getElementById('detail-id').textContent = t.id;
+                
+                const qc = document.getElementById('qrcode-display'); qc.innerHTML='';
+                new QRCode(qc, {text:JSON.stringify({id:t.id}), width:150, height:150});
+            },
+            scanStart: () => {
                 const video = document.getElementById('video');
                 const canvasElement = document.getElementById('canvas');
+                const resultBox = document.getElementById('scan-result');
                 if(!video || !canvasElement) return;
 
                 const canvas = canvasElement.getContext('2d', { willReadFrequently: true });
-                const loadingMessage = document.getElementById('loadingMessage');
-                const resultBox = document.getElementById('scan-result');
-                
                 scanActive = true;
 
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function(stream) {
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
                     videoStream = stream;
                     video.srcObject = stream;
                     video.setAttribute("playsinline", true);
                     video.play();
                     requestAnimationFrame(tick);
                 }).catch(err => {
-                    console.error(err);
-                    if(resultBox) resultBox.innerHTML = `<p class="text-red-400 font-bold">カメラ起動エラー<br><span class="text-xs font-normal">HTTPSまたは許可が必要です</span></p>`;
+                    if(resultBox) resultBox.innerHTML = `<p class="text-red-400">カメラエラー: ${err.message || 'HTTPS必須'}</p>`;
                 });
 
                 function tick() {
                     if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                        if(loadingMessage) loadingMessage.hidden = true;
-                        canvasElement.hidden = false;
                         canvasElement.height = video.videoHeight;
                         canvasElement.width = video.videoWidth;
                         canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-                        
                         if (scanActive) {
-                            const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-                            const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
-                            if (code) {
-                                logic.processScan(code.data);
-                            }
+                            const code = jsQR(canvas.getImageData(0, 0, canvasElement.width, canvasElement.height).data, canvasElement.width, canvasElement.height, { inversionAttempts: "dontInvert" });
+                            if (code && code.data) logic.processScan(code.data);
                         }
                     }
-                    requestAnimationFrame(tick);
+                    if(videoStream && videoStream.active) requestAnimationFrame(tick);
                 }
             },
             stopScanner: () => {
@@ -796,55 +626,42 @@
                 }
             },
             processScan: async (content) => {
-                scanActive = false; // Pause immediately
-                
+                scanActive = false; 
                 let id;
-                try { 
-                    const data = JSON.parse(content);
-                    id = data.id;
+                try {
+                    const d = JSON.parse(content);
+                    if(!d.id) throw 1;
+                    id = d.id;
                 } catch(e) { 
-                    console.log("JSON Parse Failed or Non-JSON QR");
-                    setTimeout(() => { scanActive = true; }, 1000); 
+                    setTimeout(() => scanActive = true, 500); 
                     return; 
                 }
 
-                if (!id) {
-                    console.log("No ID in QR data");
-                    setTimeout(() => { scanActive = true; }, 1000);
-                    return;
-                }
-                
-                const el = document.getElementById('scan-result');
-                el.innerHTML = '<div class="text-white"><i class="fa-solid fa-spinner fa-spin mr-2"></i>照合中...</div>';
-                
+                const res = document.getElementById('scan-result');
+                res.innerHTML = '<span class="text-gold-400 animate-pulse">照合中...</span>';
+
                 try {
-                    const data = await apiRequest('scan', { ticketId: id });
-                    
+                    const data = await api('scan', { ticketId: id });
                     if(data.status === 'success') {
-                        el.className = "mt-4 min-h-[100px] rounded-2xl p-4 flex items-center justify-center text-center bg-emerald-500/20 border border-emerald-500/50";
-                        el.innerHTML = `<div><i class="fa-solid fa-check-circle text-4xl text-emerald-400 mb-2"></i><h3 class="font-bold text-white text-xl">入場OK</h3><p class="text-emerald-200 mt-1">${data.ticket.owner_name} 様</p><p class="text-sm text-emerald-200/70 font-mono">${data.ticket.seat_number}</p></div>`;
+                        res.innerHTML = `<div class="text-emerald-400 font-bold text-lg"><i class="fa-solid fa-check-circle"></i> OK<br><span class="text-white text-sm">${data.ticket.owner_name}<br>${data.ticket.seat_number}</span></div>`;
                     } else if(data.status === 'used') {
-                        el.className = "mt-4 min-h-[100px] rounded-2xl p-4 flex items-center justify-center text-center bg-yellow-500/20 border border-yellow-500/50";
-                        el.innerHTML = `<div><i class="fa-solid fa-triangle-exclamation text-4xl text-yellow-400 mb-2"></i><h3 class="font-bold text-white text-xl">使用済み</h3></div>`;
+                        res.innerHTML = `<div class="text-yellow-400 font-bold text-lg"><i class="fa-solid fa-triangle-exclamation"></i> 使用済み</div>`;
                     } else {
-                        throw new Error(data.message);
+                        res.innerHTML = `<div class="text-red-400 font-bold">エラー<br><span class="text-xs text-white">${data.message}</span></div>`;
                     }
                 } catch(e) {
-                    el.className = "mt-4 min-h-[100px] rounded-2xl p-4 flex items-center justify-center text-center bg-red-500/20 border border-red-500/50";
-                    el.innerHTML = `<div><i class="fa-solid fa-circle-xmark text-4xl text-red-400 mb-2"></i><h3 class="font-bold text-white">エラー</h3><p class="text-xs text-red-300 mt-1">${e.message}</p></div>`;
+                    res.innerHTML = `<div class="text-red-400 font-bold">通信エラー<br><span class="text-xs text-white">${e.message}</span></div>`;
                 }
-                
-                // Resume scanning after delay to show result
-                setTimeout(() => { 
-                    scanActive = true; 
+
+                setTimeout(() => {
+                    scanActive = true;
+                    if(res) res.innerHTML = '<p class="text-xs opacity-50">QRをスキャン</p>';
                 }, 3000);
             }
         };
 
-        // --- INIT ---
-        window.addEventListener('load', app.init); // Ensure init runs on load
         document.getElementById('auth-form').addEventListener('submit', auth.submit);
-        auth.toggleMode('login');
+        window.addEventListener('load', app.init);
     </script>
 </body>
 </html>
