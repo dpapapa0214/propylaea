@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PROPYLAEA STORE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" href="icons/propylaea-store.png">
+    <link rel="apple-touch-icon" href="icons/propylaea-store.png">
+    <link rel="manifest" href="/manifest/manifest-store.json">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Noto Sans JP', 'sans-serif'], serif: ['Cinzel', 'serif'] },
+                    colors: { 
+                        primary: '#0EA5E9', 
+                        secondary: '#3B82F6',
+                        accent: '#22D3EE'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background: #02040a; color: #fff; overflow-x: hidden; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(56, 189, 248, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            transition: all 0.4s ease;
+        }
+        .glass-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(56, 189, 248, 0.5);
+            box-shadow: 0 15px 50px -10px rgba(14, 165, 233, 0.15);
+        }
+        .btn {
+            background: linear-gradient(135deg, #0EA5E9, #2563EB);
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.3);
+        }
+        .btn::after {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: 0.5s;
+        }
+        .btn:hover::after { left: 100%; }
+        
+        .particle { position: absolute; background: rgba(14, 165, 233, 0.3); border-radius: 50%; animation: float 10s infinite linear; }
+        @keyframes float { 0% { transform: translateY(0) rotate(0deg); opacity: 0; } 50% { opacity: 1; } 100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; } }
+    </style>
+</head>
+<body class="bg-black min-h-screen flex flex-col relative font-sans">
+    
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute w-full h-full bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')] bg-cover bg-center opacity-20 mix-blend-screen"></div>
+        <div id="particles"></div>
+    </div>
+
+    <header class="relative z-10 flex justify-between items-center p-6 md:px-12 border-b border-primary/20 backdrop-blur-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 border border-primary rounded-full flex items-center justify-center text-primary shadow-[0_0_15px_rgba(14,165,233,0.3)]"><i class="fa-solid fa-store"></i></div>
+            <h1 class="text-2xl font-serif text-primary tracking-[0.2em] font-bold text-shadow-glow">STORE</h1>
+        </div>
+        <div id="user-area" class="text-xs font-mono tracking-widest text-slate-400">GUEST</div>
+    </header>
+
+    <main class="relative z-10 flex-1 container mx-auto px-4 py-12">
+        
+        <div id="login-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md">
+            <div class="w-full max-w-sm glass-card p-8 rounded-2xl relative">
+                <button onclick="store.closeLogin()" class="absolute top-4 right-4 text-slate-500 hover:text-white"><i class="fa-solid fa-times"></i></button>
+                <div class="flex mb-6 border-b border-white/10">
+                    <button onclick="store.toggleAuth('login')" id="tab-login" class="flex-1 py-2 text-primary font-bold border-b-2 border-primary transition">LOGIN</button>
+                    <button onclick="store.toggleAuth('register')" id="tab-register" class="flex-1 py-2 text-slate-500 hover:text-white transition">REGISTER</button>
+                </div>
+                <div id="form-login">
+                    <input id="login-user" type="text" placeholder="User ID" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 mb-3 text-white outline-none focus:border-primary transition">
+                    <input id="login-pass" type="password" placeholder="Password" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 mb-6 text-white outline-none focus:border-primary transition">
+                    <button onclick="store.login()" class="w-full btn py-3 rounded-lg font-bold tracking-widest text-sm">ENTER</button>
+                </div>
+                <div id="form-register" class="hidden">
+                    <input id="reg-user" type="text" placeholder="User ID" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 mb-3 text-white outline-none focus:border-primary transition">
+                    <input id="reg-email" type="email" placeholder="Email" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 mb-3 text-white outline-none focus:border-primary transition">
+                    <input id="reg-pass" type="password" placeholder="Password" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 mb-6 text-white outline-none focus:border-primary transition">
+                    <button onclick="store.register()" class="w-full btn py-3 rounded-lg font-bold tracking-widest text-sm">CREATE ACCOUNT</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detail Modal -->
+        <div id="detail-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl p-4">
+            <div class="w-full max-w-3xl glass-card rounded-2xl relative overflow-hidden flex flex-col md:flex-row max-h-[85vh]">
+                <button onclick="store.closeDetail()" class="absolute top-4 right-4 z-20 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-white hover:text-black transition"><i class="fa-solid fa-times"></i></button>
+                
+                <div class="md:w-5/12 bg-gray-900 relative">
+                    <div id="modal-img" class="absolute inset-0 bg-cover bg-center filter saturate-150"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                </div>
+                
+                <div class="md:w-7/12 p-8 flex flex-col overflow-y-auto">
+                    <p class="text-primary text-xs font-mono tracking-widest mb-2" id="modal-date">DATE</p>
+                    <h2 class="text-3xl font-serif font-bold text-white mb-4 leading-tight" id="modal-title">TITLE</h2>
+                    <div class="flex items-center gap-2 text-slate-400 text-sm mb-6 pb-6 border-b border-white/10">
+                        <i class="fa-solid fa-location-dot text-primary"></i> <span id="modal-loc">LOCATION</span>
+                    </div>
+                    
+                    <div class="flex-1 mb-8">
+                        <p id="modal-desc" class="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">No description available.</p>
+                    </div>
+
+                    <div class="flex gap-3 mt-auto">
+                         <button onclick="store.shareEvent()" class="px-4 rounded-xl border border-white/20 text-white hover:bg-white hover:text-black transition"><i class="fa-solid fa-share-nodes"></i></button>
+                         <button onclick="store.getTicket()" class="flex-1 btn py-4 rounded-xl font-bold tracking-[0.2em] shadow-lg">GET TICKET</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hero -->
+        <div class="text-center mb-20 relative">
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary rounded-full blur-[150px] opacity-20 pointer-events-none"></div>
+            <h2 class="text-4xl md:text-7xl font-serif font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-500 drop-shadow-lg">EXPERIENCE<br>THE FUTURE</h2>
+            <p class="text-primary text-sm tracking-[0.4em] uppercase font-bold text-shadow-glow">Exclusive Event Access</p>
+        </div>
+
+        <div id="event-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
+            <div class="col-span-full text-center py-20 opacity-30 font-serif tracking-widest">LOADING CATAROGUE...</div>
+        </div>
+
+    </main>
+
+    <footer class="relative z-10 p-8 text-center border-t border-white/5 text-[10px] text-slate-600 tracking-widest">
+        PROPYLAEA STORE SYSTEM &copy; 2025
+    </footer>
+
+    <script>
+        const API = 'https://ethimp0.shop/api5.php';
+        let user = JSON.parse(localStorage.getItem('prop_u'));
+        let currentEvent = null;
+        let eventList = [];
+
+        const pCont = document.getElementById('particles');
+        for(let i=0; i<20; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random()*100 + 'vw';
+            p.style.width = Math.random()*4 + 1 + 'px';
+            p.style.height = p.style.width;
+            p.style.animationDuration = Math.random()*10 + 5 + 's';
+            p.style.animationDelay = Math.random()*5 + 's';
+            pCont.appendChild(p);
+        }
+
+        const store = {
+            init: () => {
+                store.updateUserDisplay();
+                store.loadEvents();
+            },
+            updateUserDisplay: () => {
+                const el = document.getElementById('user-area');
+                if(user) {
+                    el.innerHTML = `<span class="text-primary font-bold border-b border-primary pb-1">${user.username}</span> <button onclick="store.logout()" class="ml-4 text-slate-500 hover:text-white transition"><i class="fa-solid fa-right-from-bracket"></i></button>`;
+                } else {
+                    el.innerHTML = `<button onclick="store.showLogin()" class="border border-primary/50 text-primary px-6 py-2 rounded-full hover:bg-primary hover:text-white transition font-bold text-[10px] tracking-widest">LOGIN</button>`;
+                }
+            },
+            showLogin: () => document.getElementById('login-modal').classList.remove('hidden'),
+            closeLogin: () => document.getElementById('login-modal').classList.add('hidden'),
+            toggleAuth: (mode) => {
+                const isLogin = mode === 'login';
+                document.getElementById('tab-login').className = isLogin ? 'flex-1 py-2 text-primary font-bold border-b-2 border-primary transition' : 'flex-1 py-2 text-slate-500 hover:text-white transition';
+                document.getElementById('tab-register').className = !isLogin ? 'flex-1 py-2 text-primary font-bold border-b-2 border-primary transition' : 'flex-1 py-2 text-slate-500 hover:text-white transition';
+                document.getElementById('form-login').classList.toggle('hidden', !isLogin);
+                document.getElementById('form-register').classList.toggle('hidden', isLogin);
+            },
+            login: async () => {
+                const u = document.getElementById('login-user').value;
+                const p = document.getElementById('login-pass').value;
+                try {
+                    const res = await fetch(`${API}?action=login`, {method:'POST', body:JSON.stringify({username:u, password:p})});
+                    const d = await res.json();
+                    if(d.success) {
+                        user = d.user; localStorage.setItem('prop_u', JSON.stringify(user));
+                        store.closeLogin(); store.updateUserDisplay();
+                    } else alert('Login Failed');
+                } catch(e){alert('Error');}
+            },
+            register: async () => {
+                const u = document.getElementById('reg-user').value;
+                const e = document.getElementById('reg-email').value;
+                const p = document.getElementById('reg-pass').value;
+                try {
+                    const res = await fetch(`${API}?action=register`, {method:'POST', body:JSON.stringify({username:u, email:e, password:p, role:'attendee'})});
+                    const d = await res.json();
+                    if(d.success) {
+                        alert('Registration successful! Please login.');
+                        store.toggleAuth('login');
+                    } else alert('Error: ' + d.error);
+                } catch(err){alert('Connection Error');}
+            },
+            logout: () => {
+                user = null; localStorage.removeItem('prop_u'); store.updateUserDisplay();
+            },
+            loadEvents: async () => {
+                try {
+                    const res = await fetch(`${API}?action=get_public_events`);
+                    const d = await res.json();
+                    eventList = d.events || [];
+                    const grid = document.getElementById('event-grid');
+                    
+                    if(eventList.length === 0) {
+                        grid.innerHTML = '<div class="col-span-full text-center py-20 opacity-30 font-serif tracking-widest text-sm">NO PUBLIC EVENTS AVAILABLE</div>';
+                        return;
+                    }
+
+                    grid.innerHTML = eventList.map(e => {
+                        const img = e.seatConfig?.imageUrl ? `background-image: url('${e.seatConfig.imageUrl}');` : `background-image: url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1000&auto=format&fit=crop');`;
+                        return `
+                        <div onclick="store.openDetail(${e.id})" class="glass-card rounded-2xl overflow-hidden flex flex-col group h-full relative cursor-pointer">
+                            <div class="h-48 bg-gray-900 relative overflow-hidden">
+                                <div class="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-110 opacity-60 group-hover:opacity-80" style="${img}"></div>
+                                <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                                <div class="absolute bottom-4 left-4 right-4">
+                                    <p class="text-primary text-xs font-mono mb-1 tracking-widest">${e.eventDate || 'DATE TBA'}</p>
+                                    <h3 class="text-xl font-bold leading-tight font-serif text-white group-hover:text-primary transition shadow-black drop-shadow-md">${e.eventName}</h3>
+                                </div>
+                            </div>
+                            <div class="p-6 flex-1 flex flex-col justify-between bg-gradient-to-b from-white/5 to-transparent">
+                                <div class="flex items-center gap-3 text-xs text-slate-300 mb-8 border-b border-white/5 pb-4">
+                                    <i class="fa-solid fa-location-dot text-primary"></i> ${e.eventLocation || 'Unknown Location'}
+                                </div>
+                                <button class="w-full py-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white hover:text-black transition text-[10px] font-bold tracking-[0.3em] uppercase shadow-lg group-hover:shadow-primary/20">
+                                    View Details
+                                </button>
+                            </div>
+                        </div>
+                    `}).join('');
+                    
+                    // URL Param Check
+                    const params = new URLSearchParams(window.location.search);
+                    const targetId = params.get('id');
+                    if(targetId) store.openDetail(parseInt(targetId));
+                    
+                } catch(e) { console.error(e); }
+            },
+            openDetail: (id) => {
+                const e = eventList.find(ev => ev.id === id);
+                if(!e) return;
+                
+                currentEvent = e;
+                document.getElementById('modal-title').textContent = e.eventName;
+                document.getElementById('modal-date').textContent = e.eventDate || 'TBD';
+                document.getElementById('modal-loc').textContent = e.eventLocation || 'Unknown';
+                document.getElementById('modal-desc').textContent = e.description || 'No description provided.';
+                
+                const bg = e.seatConfig?.imageUrl ? `url('${e.seatConfig.imageUrl}')` : `url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1000&auto=format&fit=crop')`;
+                document.getElementById('modal-img').style.backgroundImage = bg;
+                document.getElementById('detail-modal').classList.remove('hidden');
+            },
+            closeDetail: () => {
+                document.getElementById('detail-modal').classList.add('hidden');
+            },
+            shareEvent: () => {
+                if(!currentEvent) return;
+                const url = `${window.location.origin}${window.location.pathname}?id=${currentEvent.id}`;
+                navigator.clipboard.writeText(url).then(() => alert('Link copied to clipboard!')).catch(() => prompt("Copy this link:", url));
+            },
+            getTicket: async () => {
+                if(!user) { store.showLogin(); return; }
+                if(!confirm('Get ticket for this event? (Limit: 1)')) return;
+                try {
+                    const res = await fetch(`${API}?action=store_claim_ticket`, {method:'POST', body:JSON.stringify({userId:user.id, eventId:currentEvent.id})});
+                    const d = await res.json();
+                    if(d.success) {
+                        alert('Success! Check your PROPYLAEA app vault.');
+                        store.closeDetail();
+                    } else alert('Error: ' + d.error);
+                } catch(e){alert('Network Error');}
+            }
+        };
+        store.init();
+    </script>
+</body>
+</html>
