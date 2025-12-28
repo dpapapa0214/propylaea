@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PROPYLAEA Admin - Console</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" href="icons/propylaea-admin.png">
+    <link rel="apple-touch-icon" href="icons/propylaea-admin.png">
+    <link rel="manifest" href="/manifest/manifest-admin.json">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: ['class', '[data-theme="dark"]'],
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Zen Kaku Gothic New', 'sans-serif'], serif: ['Cinzel', 'serif'] },
+                    colors: { 
+                        primary: { 400: '#38BDF8', 500: '#0EA5E9', 600: '#0284C7' }, // Sky/Blue
+                        secondary: { 400: '#818CF8', 500: '#6366F1' } // Indigo
+                    },
+                    backgroundImage: { 'noise': "url('https://www.transparenttextures.com/patterns/stardust.png')" }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --bg-main: #02040a; --text-main: #f0f9ff; --text-muted: #94a3b8;
+            --glass-bg: rgba(15, 23, 42, 0.7); --glass-border: rgba(56, 189, 248, 0.1);
+            --input-bg: rgba(2, 6, 23, 0.5); --hover-bg: rgba(56, 189, 248, 0.05);
+        }
+        :root[data-theme="light"] {
+            --bg-main: #f0f9ff; --text-main: #0c4a6e; --text-muted: #475569;
+            --glass-bg: rgba(255, 255, 255, 0.9); --glass-border: rgba(14, 165, 233, 0.1);
+            --input-bg: rgba(255, 255, 255, 0.8); --hover-bg: rgba(14, 165, 233, 0.05);
+        }
+        body { background-color: var(--bg-main); color: var(--text-main); transition: background-color 0.3s; overflow: hidden; }
+        .glass-panel { background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); box-shadow: 0 4px 30px rgba(14, 165, 233, 0.1); }
+        .btn-primary { 
+            background: linear-gradient(135deg, #0EA5E9, #3B82F6); 
+            color: #fff; font-weight: 700; 
+            box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+        }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(14, 165, 233, 0.5); }
+        
+        .input-field { background: var(--input-bg); border: 1px solid var(--glass-border); color: var(--text-main); transition: 0.3s; }
+        .input-field:focus { border-color: #38BDF8; box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.3); }
+        .h-safe-screen { height: 100dvh; }
+        .text-glow { text-shadow: 0 0 20px rgba(56, 189, 248, 0.5); }
+    </style>
+</head>
+<body class="h-safe-screen w-screen flex text-sm md:text-base font-sans bg-noise">
+
+    <!-- AUTH SCREEN -->
+    <div id="view-auth" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md transition-opacity duration-700">
+        <div class="relative w-full max-w-md p-10 glass-panel rounded-2xl flex flex-col max-h-[90dvh] overflow-y-auto shadow-2xl border-t border-primary-500/20">
+            <div class="text-center mb-10 relative">
+                <div class="inline-block p-4 rounded-full bg-primary-500/10 mb-4 animate-pulse">
+                    <i class="fa-solid fa-chess-king text-4xl text-primary-400"></i>
+                </div>
+                <h1 class="text-3xl font-serif font-bold text-main mb-2 tracking-widest text-glow">PROPYLAEA <span class="text-sm block tracking-[0.4em] mt-2 text-primary-400 font-sans">ADMIN CONSOLE</span></h1>
+            </div>
+            
+            <div class="flex bg-black/10 dark:bg-black/30 p-1 rounded-lg mb-8 border border-primary-500/10">
+                <button onclick="auth.toggleMode('login')" id="tab-login" class="flex-1 py-3 rounded-md font-medium transition text-primary-400 bg-white/5 shadow-sm">LOGIN</button>
+                <button onclick="auth.toggleMode('register')" id="tab-register" class="flex-1 py-3 rounded-md font-medium text-slate-500 hover:text-main transition">REGISTER</button>
+            </div>
+
+            <form id="auth-form" class="space-y-5 relative z-10">
+                <input type="text" id="auth-user" class="w-full input-field rounded-lg p-4 outline-none" placeholder="USERNAME" required>
+                <input type="email" id="auth-email" class="w-full input-field rounded-lg p-4 outline-none hidden" placeholder="EMAIL">
+                <input type="password" id="auth-pass" class="w-full input-field rounded-lg p-4 outline-none" placeholder="PASSWORD" required>
+                <button type="submit" id="btn-auth" class="w-full btn-primary py-4 rounded-lg font-serif font-bold tracking-widest shadow-lg mt-4">ACCESS SYSTEM</button>
+                <div id="auth-error-box" class="hidden mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs text-center font-medium"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP LAYOUT -->
+    <div id="app-layout" class="flex w-full h-full hidden opacity-0 transition-opacity duration-1000">
+        <!-- Sidebar -->
+        <aside class="hidden md:flex flex-col w-20 lg:w-72 glass-panel border-r border-r-primary-500/10 z-20">
+            <div class="p-8 border-b border-primary-500/10 flex items-center gap-3 text-primary-400">
+                <i class="fa-solid fa-chess-king text-2xl"></i>
+                <h1 class="hidden lg:block text-lg font-serif font-bold text-main tracking-widest">ADMIN</h1>
+            </div>
+            <nav class="flex-1 py-8 space-y-2 px-3" id="sidebar-nav"></nav>
+            <div class="p-6 border-t border-primary-500/10 flex flex-col gap-4">
+                <button onclick="ui.toggleTheme()" class="w-full h-10 rounded-lg hover-bg flex items-center justify-center text-slate-500 hover:text-main transition"><i class="fa-solid fa-circle-half-stroke"></i></button>
+                <div class="flex items-center gap-3 px-3 py-3 rounded-xl bg-primary-500/5 border border-primary-500/10">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-primary-600 to-primary-400 flex items-center justify-center text-white font-bold text-xs"><i class="fa-solid fa-user-tie"></i></div>
+                    <div class="hidden lg:block flex-1 truncate"><p class="text-xs font-bold text-main truncate" id="sidebar-user">User</p></div>
+                    <button onclick="auth.logout()" class="hidden lg:block text-slate-500 hover:text-red-400 transition"><i class="fa-solid fa-power-off"></i></button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Header Mobile -->
+        <header class="md:hidden fixed top-0 w-full h-16 glass-panel flex items-center justify-between px-6 z-30 border-b border-primary-500/10 backdrop-blur-xl">
+            <div class="flex items-center gap-3 text-primary-400"><i class="fa-solid fa-chess-king"></i><h1 class="text-lg font-serif font-bold text-main">ADMIN</h1></div>
+            <div class="flex gap-4 text-slate-500"><button onclick="ui.toggleTheme()"><i class="fa-solid fa-circle-half-stroke"></i></button><button onclick="auth.logout()"><i class="fa-solid fa-right-from-bracket"></i></button></div>
+        </header>
+
+        <!-- Content -->
+        <main class="flex-1 relative overflow-hidden w-full pt-16 md:pt-0">
+            <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-primary-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+            <div class="absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+            <div id="content-container" class="h-full overflow-y-auto p-4 md:p-10 space-y-10 scroll-smooth pb-32 relative z-10"></div>
+        </main>
+        
+        <nav class="md:hidden fixed bottom-0 w-full h-20 glass-panel border-t border-primary-500/10 flex justify-around items-center z-30 pb-4" id="mobile-nav"></nav>
+    </div>
+
+    <!-- TEMPLATES -->
+    <template id="tmpl-dashboard">
+        <div class="max-w-7xl mx-auto space-y-10 animate-fade-in">
+            <header class="flex justify-between items-end gap-6 pb-6 border-b border-primary-500/10">
+                <div><p class="text-primary-400 text-xs font-serif tracking-widest mb-1">CONSOLE</p><h2 class="text-3xl md:text-4xl font-serif font-bold text-main">Dashboard</h2></div>
+                <button onclick="ui.showModal('modal-create-event')" class="btn-primary px-6 py-3 rounded-lg font-bold text-xs tracking-widest shadow-lg flex gap-2 items-center"><i class="fa-solid fa-plus"></i> NEW EVENT</button>
+            </header>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-panel p-8 rounded-2xl border-l-4 border-l-primary-500 bg-gradient-to-br from-primary-500/5 to-transparent">
+                    <p class="text-slate-500 text-xs uppercase tracking-widest mb-2 font-bold">Total Events</p>
+                    <h3 class="text-5xl font-serif font-bold text-main" id="stats-events">-</h3>
+                </div>
+                <div onclick="router.go('scanner')" class="glass-panel p-8 rounded-2xl cursor-pointer hover:border-primary-500/50 transition border-l-4 border-l-secondary-500 group bg-gradient-to-br from-secondary-500/5 to-transparent">
+                    <div class="flex justify-between items-end h-full">
+                        <div><p class="text-secondary-400 text-xs uppercase tracking-widest mb-2 font-bold">Gate Access</p><h3 class="text-2xl font-serif font-bold text-main">Launch Scanner</h3></div>
+                        <i class="fa-solid fa-expand text-4xl text-slate-500 group-hover:text-secondary-400 transition transform group-hover:scale-110"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="space-y-4">
+                <h3 class="font-serif font-bold text-xl text-main tracking-wide">Active Events</h3>
+                <div id="org-event-list" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+            </div>
+        </div>
+    </template>
+
+    <template id="tmpl-event-detail">
+        <div class="max-w-7xl mx-auto space-y-8 animate-fade-in pb-20">
+            <div class="relative w-full h-48 md:h-64 rounded-3xl overflow-hidden shadow-2xl border border-primary-500/20 group">
+                <div id="detail-hero-img" class="absolute inset-0 bg-cover bg-center transition duration-1000 group-hover:scale-105 filter saturate-150"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+                <div class="absolute bottom-0 left-0 w-full p-6 md:p-10 flex flex-col md:flex-row justify-between items-end gap-4">
+                    <div>
+                        <div class="flex items-center gap-3 mb-2 text-white">
+                            <button onclick="router.back()" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center backdrop-blur"><i class="fa-solid fa-arrow-left text-xs"></i></button>
+                            <p class="text-primary-400 text-xs font-serif tracking-[0.2em] font-bold">EVENT DETAIL</p>
+                        </div>
+                        <h2 class="text-3xl md:text-5xl font-serif font-bold text-white tracking-tight leading-none" id="detail-page-title">Loading...</h2>
+                    </div>
+                    <div class="flex gap-4 text-xs font-mono text-slate-300">
+                        <span class="bg-black/50 backdrop-blur border border-white/10 px-3 py-1.5 rounded"><i class="fa-regular fa-clock mr-2 text-primary-400"></i><span id="detail-page-date">-</span></span>
+                        <span class="bg-black/50 backdrop-blur border border-white/10 px-3 py-1.5 rounded"><i class="fa-solid fa-location-dot mr-2 text-primary-400"></i><span id="detail-page-loc">-</span></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass-panel p-6 rounded-2xl">
+                <h4 class="text-xs text-primary-400 font-bold uppercase tracking-widest mb-2">Description</h4>
+                <p id="detail-page-desc" class="text-sm text-main leading-relaxed whitespace-pre-wrap opacity-90">No description.</p>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-8">
+                <div class="w-full lg:w-80 space-y-6 shrink-0">
+                    <div class="glass-panel p-6 rounded-2xl space-y-4">
+                        <div><p class="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Configuration</p><p class="text-sm font-bold text-main" id="detail-config-info">-</p></div>
+                        <button onclick="logic.openIssueModal()" class="w-full btn-primary py-4 rounded-xl font-bold shadow-lg text-xs tracking-widest"><i class="fa-solid fa-ticket mr-2"></i>ISSUE TICKETS</button>
+                    </div>
+                </div>
+                <div class="flex-1 glass-panel rounded-2xl overflow-hidden flex flex-col min-h-[500px]">
+                    <div class="p-6 border-b border-primary-500/10 flex justify-between items-center hover-bg">
+                        <h3 class="font-serif font-bold text-main tracking-wide">Issued Tickets <span id="detail-count" class="ml-2 text-xs text-white bg-primary-500 px-2 py-0.5 rounded-full shadow-lg">0</span></h3>
+                        <button onclick="logic.loadEventDetail(router.params)" class="text-xs text-slate-500 hover:text-primary-400 flex items-center gap-1 transition"><i class="fa-solid fa-rotate-right"></i> REFRESH</button>
+                    </div>
+                    <div class="overflow-auto flex-1 p-2">
+                        <table class="w-full text-left text-sm border-collapse">
+                            <thead class="text-[10px] text-slate-500 uppercase font-bold tracking-wider sticky top-0 bg-primary-500/5 backdrop-blur z-10">
+                                <tr><th class="px-4 py-3 rounded-l-lg">Seat</th><th class="px-4 py-3">Code</th><th class="px-4 py-3">Owner</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 rounded-r-lg text-right">Action</th></tr>
+                            </thead>
+                            <tbody id="detail-ticket-list" class="divide-y divide-primary-500/10 text-main font-mono text-xs"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="tmpl-scanner">
+        <div class="max-w-md mx-auto h-full flex flex-col pt-10">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-serif font-bold tracking-widest text-main">GATE SCANNER</h2>
+                <button onclick="router.back()" class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition dark:text-white text-slate-800"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="flex-1 relative bg-black rounded-[2rem] overflow-hidden border border-primary-500/30 shadow-[0_0_50px_rgba(14,165,233,0.1)] min-h-[400px] flex items-center justify-center group">
+                <video id="video" autoplay muted playsinline class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition duration-500"></video>
+                <canvas id="canvas" class="hidden"></canvas>
+                <div class="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
+                    <div id="scan-frame" class="w-64 h-64 border-2 border-primary-400/30 rounded-3xl relative transition-all duration-300">
+                        <div id="scan-line" class="absolute top-0 w-full h-0.5 bg-primary-400 shadow-[0_0_20px_#38BDF8] animate-scan"></div>
+                        <div class="absolute top-0 left-0 w-6 h-6 border-l-2 border-t-2 border-primary-400 rounded-tl-lg"></div>
+                        <div class="absolute top-0 right-0 w-6 h-6 border-r-2 border-t-2 border-primary-400 rounded-tr-lg"></div>
+                        <div class="absolute bottom-0 left-0 w-6 h-6 border-l-2 border-b-2 border-primary-400 rounded-bl-lg"></div>
+                        <div class="absolute bottom-0 right-0 w-6 h-6 border-r-2 border-b-2 border-primary-400 rounded-br-lg"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="scan-result" class="mt-8 min-h-[100px] glass-panel rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all duration-300">
+                <p class="text-slate-500 text-xs font-mono tracking-widest">READY TO SCAN</p>
+            </div>
+        </div>
+        <style>@keyframes scan { 0% {top:0;opacity:0} 10% {opacity:1} 90% {opacity:1} 100% {top:100%;opacity:0} }</style>
+    </template>
+
+    <!-- MODALS -->
+    <!-- Create Event Modal -->
+    <div id="modal-create-event" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-md p-4 transition-opacity duration-300">
+        <div class="w-full max-w-md glass-panel rounded-2xl p-8 shadow-2xl relative overflow-hidden my-auto max-h-screen overflow-y-auto">
+            <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-primary-500 to-transparent"></div>
+            <h3 class="text-2xl font-serif font-bold mb-6 tracking-wide text-main">Create Event</h3>
+            <form onsubmit="logic.createEvent(event)" class="space-y-4">
+                <div class="relative group cursor-pointer" onclick="document.getElementById('evt-img-file').click()">
+                    <div id="img-preview" class="w-full h-32 bg-primary-500/5 border border-primary-500/20 border-dashed rounded-lg flex flex-col items-center justify-center text-slate-500 group-hover:border-primary-400/50 group-hover:text-primary-400 transition bg-cover bg-center">
+                        <i class="fa-regular fa-image text-2xl mb-2"></i><span class="text-[10px] uppercase tracking-widest">Cover Image</span>
+                    </div>
+                    <input type="file" id="evt-img-file" accept="image/*" class="hidden" onchange="logic.handleImageUpload(this)">
+                </div>
+                <input type="text" id="new-evt-name" placeholder="イベント名" class="w-full input-field rounded-lg p-3 outline-none" required>
+                <textarea id="new-evt-desc" placeholder="イベントの説明" class="w-full input-field rounded-lg p-3 outline-none h-24 text-sm" required></textarea>
+                <div class="flex gap-3">
+                    <input type="date" id="new-evt-date" class="flex-1 input-field rounded-lg p-3 outline-none text-xs">
+                    <input type="text" id="new-evt-loc" placeholder="開催場所" class="flex-1 input-field rounded-lg p-3 outline-none">
+                </div>
+                <div class="p-4 bg-primary-500/5 rounded-lg border border-primary-500/10 space-y-4">
+                    <p class="text-[10px] text-primary-400 font-bold uppercase tracking-widest mb-1">SEAT TYPE</p>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-500 dark:text-slate-300"><input type="radio" name="seatType" value="designated" checked onchange="ui.toggleCreateSeatConfig()" class="accent-primary-400"> 指定席</label>
+                        <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-500 dark:text-slate-300"><input type="radio" name="seatType" value="free" onchange="ui.toggleCreateSeatConfig()" class="accent-primary-400"> 自由席</label>
+                    </div>
+                    <div id="conf-designated" class="space-y-3 pt-2 border-t border-primary-500/10">
+                        <div class="flex gap-2 items-center"><span class="text-xs text-slate-500 w-8">Rows</span><select id="conf-row-start" class="flex-1 input-field rounded p-1.5 text-center text-xs"></select> <span class="opacity-30">-</span> <select id="conf-row-end" class="flex-1 input-field rounded p-1.5 text-center text-xs"></select></div>
+                        <div class="flex gap-2 items-center"><span class="text-xs text-slate-500 w-8">Cols</span><input type="number" id="conf-col-max" value="20" class="flex-1 input-field rounded p-1.5 text-center text-xs" placeholder="Max"></div>
+                    </div>
+                    <div id="conf-free" class="hidden space-y-3 pt-2 border-t border-primary-500/10">
+                        <div class="flex items-center gap-2"><span class="text-xs text-slate-500">Max Capacity:</span><input type="number" id="conf-capacity" value="100" class="flex-1 input-field rounded p-1.5 text-center text-xs" placeholder="Limit"></div>
+                    </div>
+                </div>
+                <label class="flex items-center gap-2 text-xs text-slate-500 cursor-pointer hover:text-main transition"><input type="checkbox" id="new-evt-public" class="accent-primary-400 rounded"> PROPYLAEA STOREに公開</label>
+                <div class="flex gap-2 pt-2"><button type="button" onclick="ui.closeModal('modal-create-event')" class="flex-1 py-3 opacity-50 hover:opacity-100 transition uppercase text-xs tracking-widest text-main">Cancel</button><button type="submit" class="flex-1 btn-primary py-3 rounded-lg font-bold shadow-lg uppercase text-xs tracking-widest">Create</button></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Issue Modal -->
+    <div id="modal-issue-ticket" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="w-full max-w-md glass-panel rounded-2xl p-8 shadow-2xl">
+            <h3 class="text-xl font-serif font-bold mb-1 text-main">Issue Tickets</h3>
+            <p class="text-[10px] opacity-50 mb-6 font-mono uppercase tracking-wider text-main" id="issue-modal-desc">Configure parameters</p>
+            <form onsubmit="logic.issueTicket(event)" class="space-y-5">
+                <input type="hidden" id="issue-event-id">
+                <div class="bg-primary-500/5 p-4 rounded-xl border border-primary-500/10 flex justify-between items-center">
+                    <label class="text-[10px] text-primary-400 font-bold uppercase tracking-widest">Quantity</label>
+                    <div class="flex items-center gap-2"><input type="number" id="issue-qty" value="1" min="1" max="50" class="w-16 input-field rounded p-2 text-center font-bold outline-none font-mono text-lg"> <span class="text-xs opacity-50 text-main">TICKETS</span></div>
+                </div>
+                <div id="issue-designated-opts" class="hidden space-y-4">
+                    <div class="flex gap-3">
+                        <div class="flex-1 bg-primary-500/5 p-3 rounded-lg border border-primary-500/10">
+                            <label class="text-[10px] opacity-50 block mb-1 uppercase text-center text-main">Row Range</label>
+                            <div class="flex gap-1"><select id="issue-row-s" class="input-field rounded w-full text-center text-xs p-1"></select><span class="opacity-30 text-main">-</span><select id="issue-row-e" class="input-field rounded w-full text-center text-xs p-1"></select></div>
+                        </div>
+                        <div class="flex-1 bg-primary-500/5 p-3 rounded-lg border border-primary-500/10">
+                            <label class="text-[10px] opacity-50 block mb-1 uppercase text-center text-main">Col Range</label>
+                            <div class="flex gap-1"><input type="number" id="issue-col-s" value="1" class="input-field rounded w-full p-1 text-center text-xs"><span class="opacity-30 text-main">-</span><input type="number" id="issue-col-e" value="10" class="input-field rounded w-full p-1 text-center text-xs"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] opacity-50 block mb-2 uppercase tracking-widest text-main">Exclude (e.g. A-1, B-5)</label>
+                        <input type="text" id="issue-exclude" class="w-full input-field rounded-lg p-3 text-sm font-mono placeholder-slate-500 outline-none">
+                    </div>
+                </div>
+                <div id="issue-limit-info" class="text-[10px] text-right text-primary-400 font-mono tracking-wider"></div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="ui.closeModal('modal-issue-ticket')" class="flex-1 py-3 opacity-50 hover:opacity-100 transition uppercase text-xs tracking-widest text-main">Cancel</button>
+                    <button type="submit" class="flex-1 btn-primary py-3 rounded-lg font-bold shadow-lg uppercase text-xs tracking-widest">Generate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Result Modal -->
+    <div id="modal-result" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/90 backdrop-blur-md p-4 transition-opacity duration-300">
+        <div class="w-full max-w-md glass-panel rounded-2xl p-8 flex flex-col max-h-[80vh] relative border border-emerald-500/30">
+            <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500 shadow-[0_0_20px_#10b981]"></div>
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-2 text-emerald-400 border border-emerald-500/20"><i class="fa-solid fa-check"></i></div>
+                <h3 class="text-xl font-serif font-bold text-white tracking-wide">GENERATION COMPLETE</h3>
+            </div>
+            <div id="result-list" class="flex-1 overflow-y-auto space-y-2 mb-6 custom-scrollbar pr-2"></div>
+            <button onclick="ui.closeModal('modal-result'); logic.loadEventDetail();" class="w-full py-4 bg-white/5 hover:bg-white/10 rounded-xl font-bold transition uppercase text-xs tracking-widest text-white">Close</button>
+        </div>
+    </div>
+
+    <!-- Email Modal -->
+    <div id="modal-send-email" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+        <div class="w-full max-w-sm glass-panel rounded-2xl p-6 shadow-2xl">
+            <h3 class="text-lg font-bold mb-4 flex items-center text-main"><i class="fa-solid fa-envelope text-primary-400 mr-2"></i>Send Ticket</h3>
+            <div class="mb-4 bg-primary-500/5 p-4 rounded-xl border border-primary-500/10 text-sm flex justify-between items-center text-main">
+                <div><p class="text-[10px] opacity-50 uppercase">Seat</p><p id="mail-target-seat" class="font-bold">-</p></div>
+                <div class="text-right"><p class="text-[10px] opacity-50 uppercase">Code</p><p id="mail-target-code" class="font-mono text-primary-400">-</p></div>
+            </div>
+            <input type="email" id="single-email-addr" placeholder="recipient@example.com" class="w-full input-field rounded-lg p-3 mb-4 outline-none text-sm">
+            <div class="flex gap-2">
+                <button onclick="ui.closeModal('modal-send-email')" class="flex-1 py-2 opacity-50 hover:opacity-100 text-xs uppercase tracking-widest text-main">Cancel</button>
+                <button onclick="logic.executeSendEmail()" id="btn-single-send" class="flex-1 btn-primary py-2 rounded-lg text-xs font-bold shadow uppercase tracking-widest">Send</button>
+            </div>
+            <p id="single-email-status" class="text-center text-[10px] mt-3 h-4 text-muted"></p>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://ethimp0.shop/api5.php';
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxrB2fSJ7IEzKM3Xa2i_My9ikRDmkKI2TmRkX1U2nH2cwcuLQWA02ponvYUG0B1yLV2Tw/exec';
+
+        async function api(act, body={}) {
+            let url = `${API_URL}?action=${act}`;
+            if(act === 'get_event_tickets') url += `&eventId=${body.eventId}`;
+            const res = await fetch(url, { method: 'POST', body: JSON.stringify(body) });
+            const json = await res.json();
+            if(!json.success && !json.status && !json.events && !json.tickets) throw new Error(json.error || 'Error');
+            return json;
+        }
+
+        let user = null, curEvt = null, eventTickets = [], scanActive = false, videoStream = null;
+        let pendingImageBase64 = null;
+        let mailTargetTicket = null;
+
+        const auth = {
+            mode: 'login',
+            toggleMode: (m) => {
+                auth.mode = m;
+                document.getElementById('tab-login').className = m==='login'?'flex-1 py-3 rounded text-primary-400 bg-primary-500/10 shadow-inner':'flex-1 py-3 opacity-50 hover:text-main transition';
+                document.getElementById('tab-register').className = m==='register'?'flex-1 py-3 rounded text-primary-400 bg-primary-500/10 shadow-inner':'flex-1 py-3 opacity-50 hover:text-main transition';
+                document.getElementById('btn-auth').textContent = m==='login'?'ACCESS':'REGISTER';
+                
+                const ef = document.getElementById('auth-email');
+                if(ef) ef.classList.toggle('hidden', m==='login');
+                const errorBox = document.getElementById('auth-error-box');
+                if(errorBox) errorBox.classList.add('hidden');
+            },
+            submit: async (e) => {
+                e.preventDefault();
+                const u = document.getElementById('auth-user').value, p = document.getElementById('auth-pass').value;
+                try {
+                    const res = await api(auth.mode, { username: u, password: p, email: document.getElementById('auth-email').value, role: 'organizer' });
+                    if(auth.mode === 'register') { alert('登録完了'); auth.toggleMode('login'); }
+                    else { user = res.user; localStorage.setItem('prop_u', JSON.stringify(user)); app.init(); }
+                } catch(err) {
+                    const msg = document.getElementById('auth-msg'); if(msg) msg.textContent = err.message;
+                    document.getElementById('auth-error-box').classList.remove('hidden');
+                }
+            },
+            logout: () => { localStorage.removeItem('prop_u'); location.reload(); }
+        };
+
+        const app = {
+            init: () => {
+                user = JSON.parse(localStorage.getItem('prop_u'));
+                if(!user) { document.getElementById('view-auth').classList.remove('hidden'); return; }
+                const vAuth = document.getElementById('view-auth'); vAuth.style.opacity='0'; setTimeout(()=>vAuth.classList.add('hidden'),700);
+                const layout = document.getElementById('app-layout'); layout.classList.remove('hidden'); setTimeout(()=>layout.classList.remove('opacity-0'),100);
+                
+                document.getElementById('sidebar-user').textContent = user.username;
+                ui.initNav(); ui.popOpts();
+                router.go('dashboard');
+                const th = localStorage.getItem('theme') || 'dark'; document.documentElement.setAttribute('data-theme', th);
+            }
+        };
+
+        const router = {
+            go: (view, params) => {
+                document.getElementById('content-container').innerHTML = '';
+                logic.stopScanner();
+                if(view==='dashboard') document.getElementById('content-container').appendChild(document.getElementById('tmpl-dashboard').content.cloneNode(true));
+                if(view==='scanner') { document.getElementById('content-container').appendChild(document.getElementById('tmpl-scanner').content.cloneNode(true)); setTimeout(logic.scanStart, 500); }
+                if(view==='detail') { document.getElementById('content-container').appendChild(document.getElementById('tmpl-event-detail').content.cloneNode(true)); logic.loadEventDetail(params); }
+                
+                if(view==='dashboard') logic.loadDash();
+                ui.updateNavState(view);
+            },
+            back: () => {
+                 if(router.current === 'scanner') router.go('dashboard');
+                 else if(router.current === 'detail') router.go('dashboard');
+                 else router.go('dashboard');
+            },
+            navigate: (view, params) => router.go(view, params)
+        };
+
+        const ui = {
+            showModal: (id) => document.getElementById(id).classList.remove('hidden'),
+            closeModal: (id) => document.getElementById(id).classList.add('hidden'),
+            toggleTheme: () => { const n = document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark'; document.documentElement.setAttribute('data-theme', n); localStorage.setItem('theme', n); },
+            initNav: () => {
+                const links = [{l:'DASHBOARD',i:'fa-layer-group',v:'dashboard'},{l:'SCANNER',i:'fa-expand',v:'scanner'}];
+                ['sidebar-nav','mobile-nav'].forEach(pid => {
+                    const el = document.getElementById(pid); el.innerHTML = '';
+                    links.forEach(x => {
+                        const b = document.createElement('button'); b.id = `nav-${pid}-${x.v}`;
+                        b.className = pid.includes('side') ? 'w-full text-left px-4 py-3 rounded-lg opacity-60 hover:opacity-100 hover-bg flex items-center gap-4 text-xs font-bold tracking-widest transition text-muted hover:text-main' : 'flex flex-col items-center gap-1 opacity-60 hover:opacity-100 text-muted hover:text-main';
+                        b.innerHTML = `<i class="fa-solid ${x.i} ${pid.includes('side')?'w-6 text-center':''}"></i> ${pid.includes('mobile')?`<span class="text-[9px] font-bold tracking-wider">${x.l}</span>`:x.l}`;
+                        b.onclick = () => router.go(x.v); el.appendChild(b);
+                    });
+                });
+            },
+            updateNavState: (v) => {
+                document.querySelectorAll('[id^="nav-"]').forEach(el => {
+                    if(el.id.endsWith(v)) { el.classList.remove('opacity-60'); el.classList.add('text-primary-400','hover-bg'); }
+                    else { el.classList.add('opacity-60'); el.classList.remove('text-primary-400','hover-bg'); }
+                });
+            },
+            popOpts: () => {
+                const az = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(x=>`<option value="${x}">${x}</option>`).join("");
+                ['conf-row-start','conf-row-end','issue-row-s','issue-row-e'].forEach(id => { const el=document.getElementById(id); if(el){ el.innerHTML=az; if(id.endsWith('start')||id.endsWith('s')) el.value='A'; else el.value='C'; } });
+            },
+            toggleCreateSeatConfig: () => {
+                const t = document.querySelector('input[name="seatType"]:checked').value;
+                document.getElementById('conf-designated').classList.toggle('hidden', t!=='designated');
+                document.getElementById('conf-free').classList.toggle('hidden', t!=='free');
+            },
+            setScanStatus: (s) => {
+                const f = document.getElementById('scan-frame'); if(!f) return;
+                f.className = `w-64 h-64 border-2 rounded-3xl relative transition-all duration-300 ${s==='success'?'border-emerald-500 shadow-[0_0_50px_#10b981]':s==='error'?'border-red-500 shadow-[0_0_50px_#ef4444]':'border-white/30'}`;
+            }
+        };
+
+        const logic = {
+            handleImageUpload: (input) => {
+                if (input.files && input.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        pendingImageBase64 = e.target.result;
+                        document.getElementById('img-preview').style.backgroundImage = `url('${e.target.result}')`;
+                        document.getElementById('img-preview').innerHTML = ''; // Hide icon/text
+                    };
+                    reader.readAsDataURL(input.files[0]);
+                }
+            },
+            loadDash: async () => {
+                const res = await api('get_events');
+                document.getElementById('stats-events').textContent = res.events.length;
+                document.getElementById('org-event-list').innerHTML = res.events.map(e => {
+                    const style = e.seatConfig?.imageUrl ? `background-image: url('${e.seatConfig.imageUrl}');` : '';
+                    const p = {id:e.id, name:e.eventName, date:e.eventDate, loc:e.eventLocation, config:e.seatConfig, desc: e.description};
+                    return `<div onclick='router.go("detail", ${JSON.stringify(p)})' class="glass-panel p-0 rounded-xl cursor-pointer relative overflow-hidden group h-32 border border-primary-500/10 hover:border-primary-400/50 transition-all">
+                        <div class="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-105 opacity-40" style="${style}"></div>
+                        <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent p-6 flex flex-col justify-center">
+                            <h4 class="font-serif font-bold text-xl text-white group-hover:text-primary-400 transition mb-1 relative z-10">${e.eventName}</h4>
+                            <div class="flex gap-4 text-xs text-slate-300 font-mono relative z-10"><span>${e.eventDate||'TBD'}</span><span>${e.eventLocation||'Unknown'}</span></div>
+                        </div>
+                    </div>`;
+                }).join('');
+            },
+            createEvent: async (e) => {
+                e.preventDefault();
+                const type = document.querySelector('input[name="seatType"]:checked').value;
+                const cfg = {
+                    type: type,
+                    imageUrl: pendingImageBase64, // Use base64
+                    rows: [document.getElementById('conf-row-start').value, document.getElementById('conf-row-end').value],
+                    colMax: document.getElementById('conf-col-max').value,
+                    capacity: document.getElementById('conf-capacity').value
+                };
+                
+                await api('create_event', {
+                    organizerId: user.id, 
+                    eventName: document.getElementById('new-evt-name').value, 
+                    description: document.getElementById('new-evt-desc').value,
+                    eventDate: document.getElementById('new-evt-date').value, 
+                    eventLocation: document.getElementById('new-evt-loc').value,
+                    isPublic: document.getElementById('new-evt-public').checked, 
+                    seatConfig: cfg
+                });
+                pendingImageBase64 = null; // Reset
+                ui.closeModal('modal-create-event'); logic.loadDash();
+            },
+            loadEventDetail: async (params) => {
+                if(params) curEvt = params;
+                document.getElementById('detail-page-title').textContent = curEvt.name;
+                document.getElementById('detail-page-date').textContent = curEvt.date || 'TBD';
+                document.getElementById('detail-page-loc').textContent = curEvt.loc || 'Unknown';
+                document.getElementById('detail-page-desc').textContent = curEvt.desc || 'No description.';
+                
+                const cfg = curEvt.config || {};
+                let info = cfg.type === 'free' ? `FREE SEATING (MAX: ${cfg.capacity})` : `DESIGNATED (${cfg.rows?cfg.rows.join('-'):'?'} / 1-${cfg.colMax})`;
+                document.getElementById('detail-config-info').textContent = info;
+                if(cfg.imageUrl) {
+                    document.getElementById('detail-hero-img').style.backgroundImage = `url('${cfg.imageUrl}')`;
+                    document.getElementById('detail-hero-img').style.opacity = '0.4';
+                }
+
+                const res = await api('get_event_tickets', {eventId: curEvt.id});
+                eventTickets = res.tickets || [];
+                document.getElementById('detail-count').textContent = eventTickets.length;
+                document.getElementById('detail-ticket-list').innerHTML = eventTickets.map(t => 
+                    `<tr class="hover-bg transition border-b border-primary-500/10 last:border-0 group">
+                        <td class="px-4 py-3 font-bold text-main">${t.seat_number}</td>
+                        <td class="px-4 py-3 font-mono text-xs text-primary-400 tracking-wider">${t.claim_code}</td>
+                        <td class="px-4 py-3 text-xs text-muted">${t.owner_name||'-'}</td>
+                        <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${t.status==='used'?'bg-slate-800 text-slate-500':'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">${t.status==='used'?'USED':'ACTIVE'}</span></td>
+                        <td class="px-4 py-3 text-right">
+                            <button onclick='logic.openEmailModal(${JSON.stringify({seat:t.seat_number, claimCode:t.claim_code, ticketId:t.id})})' class="w-8 h-8 rounded bg-primary-500/5 hover:bg-primary-400 hover:text-white transition flex items-center justify-center ${t.mail_sent?'text-emerald-400 border border-emerald-500/30':''}"><i class="fa-solid fa-envelope"></i></button>
+                        </td>
+                    </tr>`
+                ).join('');
+            },
+            openIssueModal: () => {
+                document.getElementById('issue-event-id').value = curEvt.id;
+                document.getElementById('issue-qty').value = '1';
+                
+                const cfg = curEvt.config || {};
+                const isFree = cfg.type === 'free';
+                
+                document.getElementById('issue-designated-opts').classList.toggle('hidden', isFree);
+                if(!isFree && cfg.rows) {
+                    ui.popOpts(); 
+                    document.getElementById('issue-row-s').value = cfg.rows[0];
+                    document.getElementById('issue-row-e').value = cfg.rows[1];
+                    document.getElementById('issue-col-e').value = cfg.colMax;
+                }
+                
+                if(isFree) {
+                    const issued = eventTickets.length;
+                    const cap = parseInt(cfg.capacity) || 9999;
+                    const remain = cap - issued;
+                    document.getElementById('issue-limit-info').textContent = `REMAINING: ${remain} / CAP: ${cap}`;
+                    document.getElementById('issue-qty').max = remain;
+                } else { document.getElementById('issue-limit-info').textContent = ''; }
+
+                ui.showModal('modal-issue-ticket');
+            },
+            issueTicket: async (e) => {
+                e.preventDefault();
+                const qty = parseInt(document.getElementById('issue-qty').value);
+                const cfg = curEvt.config || {};
+                const isFreeEvent = cfg.type === 'free';
+                let seats = [];
+
+                if(isFreeEvent) {
+                    const currentCount = eventTickets.length;
+                    const limit = parseInt(cfg.capacity) || 9999;
+                    if(currentCount + qty > limit) { alert(`Capacity Limit Reached (Remaining: ${limit - currentCount})`); return; }
+                    for(let i=1; i<=qty; i++) seats.push(`自由席 #${currentCount + i}`);
+                } else {
+                    const rS = document.getElementById('issue-row-s').value, rE = document.getElementById('issue-row-e').value;
+                    const cS = parseInt(document.getElementById('issue-col-s').value), cE = parseInt(document.getElementById('issue-col-e').value);
+                    const ex = (document.getElementById('issue-exclude').value || '').split(',').map(s=>s.trim().toUpperCase());
+                    const existing = eventTickets.map(t => t.seat_number);
+                    
+                    let cands = [];
+                    const sC = Math.min(rS.charCodeAt(0), rE.charCodeAt(0)), eC = Math.max(rS.charCodeAt(0), rE.charCodeAt(0));
+                    for(let r=sC; r<=eC; r++) {
+                        for(let c=Math.min(cS, cE); c<=Math.max(cS, cE); c++) {
+                            const seat = `${String.fromCharCode(r)}-${c}`;
+                            if(!ex.includes(seat) && !existing.includes(seat)) cands.push(seat);
+                        }
+                    }
+
+                    if (cands.length < qty) { alert(`Not enough seats available in range. (Found: ${cands.length})`); return; }
+                    for (let i = cands.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [cands[i], cands[j]] = [cands[j], cands[i]]; }
+                    seats = cands.slice(0, qty);
+                }
+
+                try {
+                    const res = await api('issue_ticket', { eventId: curEvt.id, seats: seats, isFreeSeat: isFreeEvent });
+                    ui.closeModal('modal-issue-ticket');
+                    document.getElementById('result-list').innerHTML = res.tickets.map(t => 
+                        `<div class="bg-primary-500/5 border border-primary-500/10 rounded-lg p-3 flex justify-between items-center text-main">
+                            <div><p class="text-[9px] opacity-50 uppercase tracking-widest mb-1">SEAT</p><p class="text-sm font-bold text-main">${t.seat}</p></div>
+                            <div class="text-right"><p class="text-[9px] opacity-50 uppercase tracking-widest mb-1">CODE</p><p class="text-lg font-mono font-bold text-primary-400 tracking-wider">${t.claimCode}</p></div>
+                        </div>`).join('');
+                    ui.showModal('modal-issue-result');
+                } catch(err) { alert(err.message); }
+            },
+            openEmailModal: (ticket) => {
+                mailTargetTicket = ticket;
+                document.getElementById('mail-target-seat').textContent = ticket.seat;
+                document.getElementById('mail-target-code').textContent = ticket.claimCode;
+                document.getElementById('single-email-status').textContent = '';
+                document.getElementById('single-email-addr').value = '';
+                ui.showModal('modal-send-email');
+            },
+            executeSendEmail: async () => {
+                const email = document.getElementById('single-email-addr').value;
+                const statusEl = document.getElementById('single-email-status');
+                const btn = document.getElementById('btn-single-send');
+                if(!email) { statusEl.textContent = "Please enter email"; statusEl.className = "text-center text-xs mt-3 h-4 text-red-400"; return; }
+                
+                statusEl.textContent = "Sending..."; statusEl.className = "text-center text-xs mt-3 h-4 text-primary-400 animate-pulse";
+                btn.disabled = true;
+                
+                try {
+                    await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({email, tickets:[mailTargetTicket]}) });
+                    await api('mark_mail_sent', {ticketId: mailTargetTicket.ticketId});
+                    statusEl.textContent = "Sent successfully"; statusEl.className = "text-center text-xs mt-3 h-4 text-emerald-400";
+                    setTimeout(() => { ui.closeModal('modal-send-email'); logic.loadEventDetail(); }, 1000);
+                } catch(e) { statusEl.textContent = "Failed"; statusEl.className = "text-center text-xs mt-3 h-4 text-red-400"; } 
+                finally { btn.disabled = false; }
+            },
+            scanStart: () => {
+                const video = document.getElementById('video');
+                const canvasElement = document.getElementById('canvas');
+                const resultBox = document.getElementById('scan-result');
+                if(!video || !canvasElement) return;
+
+                const canvas = canvasElement.getContext('2d', { willReadFrequently: true });
+                scanActive = true;
+                ui.setScanStatus('default');
+
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
+                    videoStream = stream;
+                    video.srcObject = stream;
+                    video.setAttribute("playsinline", true);
+                    video.play();
+                    requestAnimationFrame(tick);
+                }).catch(err => {
+                    if(resultBox) resultBox.innerHTML = `<p class="text-red-400">カメラエラー: ${err.message || 'HTTPS必須'}</p>`;
+                });
+
+                function tick() {
+                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                        canvasElement.height = video.videoHeight;
+                        canvasElement.width = video.videoWidth;
+                        canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+                        if (scanActive) {
+                            const code = jsQR(canvas.getImageData(0, 0, canvasElement.width, canvasElement.height).data, canvasElement.width, canvasElement.height, { inversionAttempts: "dontInvert" });
+                            if (code && code.data) logic.processScan(code.data);
+                        }
+                    }
+                    if(videoStream && videoStream.active) requestAnimationFrame(tick);
+                }
+            },
+            stopScanner: () => {
+                scanActive = false;
+                if (videoStream) {
+                    videoStream.getTracks().forEach(track => track.stop());
+                    videoStream = null;
+                }
+            },
+            processScan: async (content) => {
+                scanActive = false; 
+                let id;
+                try {
+                    const d = JSON.parse(content);
+                    if(!d.id) throw 1;
+                    id = d.id;
+                } catch(e) { 
+                    setTimeout(() => scanActive = true, 500); 
+                    return; 
+                }
+
+                const res = document.getElementById('scan-result');
+                res.innerHTML = '<span class="text-primary-400 animate-pulse">照合中...</span>';
+
+                try {
+                    const data = await api('scan', { ticketId: id });
+                    if(data.status === 'success') {
+                        ui.setScanStatus('success');
+                        res.innerHTML = `<div class="text-emerald-400 font-bold text-lg"><i class="fa-solid fa-check-circle"></i> OK<br><span class="text-white text-sm">${data.ticket.owner_name}<br>${data.ticket.seat_number}</span></div>`;
+                    } else if(data.status === 'used') {
+                        ui.setScanStatus('error');
+                        res.innerHTML = `<div class="text-yellow-400 font-bold text-lg"><i class="fa-solid fa-triangle-exclamation"></i> 使用済み</div>`;
+                    } else {
+                        ui.setScanStatus('error');
+                        res.innerHTML = `<div class="text-red-400 font-bold">エラー<br><span class="text-xs text-white">${data.message}</span></div>`;
+                    }
+                } catch(e) {
+                    ui.setScanStatus('error');
+                    res.innerHTML = `<div class="text-red-400 font-bold">通信エラー<br><span class="text-xs text-white">${e.message}</span></div>`;
+                }
+
+                setTimeout(() => {
+                    ui.setScanStatus('default');
+                    scanActive = true;
+                    if(res) res.innerHTML = '<p class="text-xs opacity-50">QRをスキャン</p>';
+                }, 3000);
+            }
+        };
+
+        document.getElementById('auth-form').addEventListener('submit', auth.submit);
+        window.addEventListener('load', app.init);
+    </script>
+</body>
+</html>
