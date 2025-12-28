@@ -18,8 +18,8 @@
                 extend: {
                     fontFamily: { sans: ['Zen Kaku Gothic New', 'sans-serif'], serif: ['Cinzel', 'serif'] },
                     colors: { 
-                        primary: { 400: '#38BDF8', 500: '#0EA5E9', 600: '#0284C7' }, // Sky/Blue
-                        secondary: { 400: '#818CF8', 500: '#6366F1' } // Indigo
+                        primary: { 400: '#38BDF8', 500: '#0EA5E9', 600: '#0284C7' },
+                        secondary: { 400: '#818CF8', 500: '#6366F1' }
                     },
                     backgroundImage: { 'noise': "url('https://www.transparenttextures.com/patterns/stardust.png')" }
                 }
@@ -45,23 +45,19 @@
             box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
         }
         .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(14, 165, 233, 0.5); }
-        
         .input-field { background: var(--input-bg); border: 1px solid var(--glass-border); color: var(--text-main); transition: 0.3s; }
         .input-field:focus { border-color: #38BDF8; box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.3); }
         .h-safe-screen { height: 100dvh; }
-        .text-glow { text-shadow: 0 0 20px rgba(56, 189, 248, 0.5); }
     </style>
 </head>
 <body class="h-safe-screen w-screen flex text-sm md:text-base font-sans bg-noise">
 
-    <!-- AUTH SCREEN -->
+    <!-- AUTH -->
     <div id="view-auth" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md transition-opacity duration-700">
         <div class="relative w-full max-w-md p-10 glass-panel rounded-2xl flex flex-col max-h-[90dvh] overflow-y-auto shadow-2xl border-t border-primary-500/20">
             <div class="text-center mb-10 relative">
-                <div class="inline-block p-4 rounded-full bg-primary-500/10 mb-4 animate-pulse">
-                    <i class="fa-solid fa-chess-king text-4xl text-primary-400"></i>
-                </div>
-                <h1 class="text-3xl font-serif font-bold text-main mb-2 tracking-widest text-glow">PROPYLAEA <span class="text-sm block tracking-[0.4em] mt-2 text-primary-400 font-sans">ADMIN CONSOLE</span></h1>
+                <i class="fa-solid fa-chess-king text-4xl text-primary-400 mb-4 block"></i>
+                <h1 class="text-3xl font-serif font-bold text-main mb-2">PROPYLAEA <span class="text-sm block tracking-[0.4em] mt-2 text-primary-400 font-sans">ADMIN</span></h1>
             </div>
             
             <div class="flex bg-black/10 dark:bg-black/30 p-1 rounded-lg mb-8 border border-primary-500/10">
@@ -79,9 +75,8 @@
         </div>
     </div>
 
-    <!-- MAIN APP LAYOUT -->
+    <!-- MAIN LAYOUT -->
     <div id="app-layout" class="flex w-full h-full hidden opacity-0 transition-opacity duration-1000">
-        <!-- Sidebar -->
         <aside class="hidden md:flex flex-col w-20 lg:w-72 glass-panel border-r border-r-primary-500/10 z-20">
             <div class="p-8 border-b border-primary-500/10 flex items-center gap-3 text-primary-400">
                 <i class="fa-solid fa-chess-king text-2xl"></i>
@@ -98,16 +93,12 @@
             </div>
         </aside>
 
-        <!-- Header Mobile -->
         <header class="md:hidden fixed top-0 w-full h-16 glass-panel flex items-center justify-between px-6 z-30 border-b border-primary-500/10 backdrop-blur-xl">
             <div class="flex items-center gap-3 text-primary-400"><i class="fa-solid fa-chess-king"></i><h1 class="text-lg font-serif font-bold text-main">ADMIN</h1></div>
             <div class="flex gap-4 text-slate-500"><button onclick="ui.toggleTheme()"><i class="fa-solid fa-circle-half-stroke"></i></button><button onclick="auth.logout()"><i class="fa-solid fa-right-from-bracket"></i></button></div>
         </header>
 
-        <!-- Content -->
         <main class="flex-1 relative overflow-hidden w-full pt-16 md:pt-0">
-            <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-primary-600/10 rounded-full blur-[100px] pointer-events-none"></div>
-            <div class="absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary-600/10 rounded-full blur-[100px] pointer-events-none"></div>
             <div id="content-container" class="h-full overflow-y-auto p-4 md:p-10 space-y-10 scroll-smooth pb-32 relative z-10"></div>
         </main>
         
@@ -151,18 +142,18 @@
                             <button onclick="router.back()" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center backdrop-blur"><i class="fa-solid fa-arrow-left text-xs"></i></button>
                             <p class="text-primary-400 text-xs font-serif tracking-[0.2em] font-bold">EVENT DETAIL</p>
                         </div>
-                        <h2 class="text-3xl md:text-5xl font-serif font-bold text-white tracking-tight leading-none" id="detail-page-title">Loading...</h2>
+                        <h2 class="text-3xl md:text-5xl font-serif font-bold text-white tracking-tight leading-none" id="detail-page-title"></h2>
                     </div>
                     <div class="flex gap-4 text-xs font-mono text-slate-300">
-                        <span class="bg-black/50 backdrop-blur border border-white/10 px-3 py-1.5 rounded"><i class="fa-regular fa-clock mr-2 text-primary-400"></i><span id="detail-page-date">-</span></span>
-                        <span class="bg-black/50 backdrop-blur border border-white/10 px-3 py-1.5 rounded"><i class="fa-solid fa-location-dot mr-2 text-primary-400"></i><span id="detail-page-loc">-</span></span>
+                        <span class="bg-black/50 backdrop-blur border border-white/10 px-3 py-1.5 rounded"><i class="fa-regular fa-clock mr-2 text-primary-400"></i><span id="detail-page-date"></span></span>
+                        <span class="bg-black/50 backdrop-blur border border-white/10 px-3 py-1.5 rounded"><i class="fa-solid fa-location-dot mr-2 text-primary-400"></i><span id="detail-page-loc"></span></span>
                     </div>
                 </div>
             </div>
             
             <div class="glass-panel p-6 rounded-2xl">
                 <h4 class="text-xs text-primary-400 font-bold uppercase tracking-widest mb-2">Description</h4>
-                <p id="detail-page-desc" class="text-sm text-main leading-relaxed whitespace-pre-wrap opacity-90">No description.</p>
+                <p id="detail-page-desc" class="text-sm text-main leading-relaxed whitespace-pre-wrap opacity-90"></p>
             </div>
 
             <div class="flex flex-col lg:flex-row gap-8">
@@ -202,10 +193,6 @@
                 <div class="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
                     <div id="scan-frame" class="w-64 h-64 border-2 border-primary-400/30 rounded-3xl relative transition-all duration-300">
                         <div id="scan-line" class="absolute top-0 w-full h-0.5 bg-primary-400 shadow-[0_0_20px_#38BDF8] animate-scan"></div>
-                        <div class="absolute top-0 left-0 w-6 h-6 border-l-2 border-t-2 border-primary-400 rounded-tl-lg"></div>
-                        <div class="absolute top-0 right-0 w-6 h-6 border-r-2 border-t-2 border-primary-400 rounded-tr-lg"></div>
-                        <div class="absolute bottom-0 left-0 w-6 h-6 border-l-2 border-b-2 border-primary-400 rounded-bl-lg"></div>
-                        <div class="absolute bottom-0 right-0 w-6 h-6 border-r-2 border-b-2 border-primary-400 rounded-br-lg"></div>
                     </div>
                 </div>
             </div>
@@ -217,10 +204,8 @@
     </template>
 
     <!-- MODALS -->
-    <!-- Create Event Modal -->
     <div id="modal-create-event" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-md p-4 transition-opacity duration-300">
         <div class="w-full max-w-md glass-panel rounded-2xl p-8 shadow-2xl relative overflow-hidden my-auto max-h-screen overflow-y-auto">
-            <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-primary-500 to-transparent"></div>
             <h3 class="text-2xl font-serif font-bold mb-6 tracking-wide text-main">Create Event</h3>
             <form onsubmit="logic.createEvent(event)" class="space-y-4">
                 <div class="relative group cursor-pointer" onclick="document.getElementById('evt-img-file').click()">
@@ -255,7 +240,6 @@
         </div>
     </div>
 
-    <!-- Issue Modal -->
     <div id="modal-issue-ticket" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
         <div class="w-full max-w-md glass-panel rounded-2xl p-8 shadow-2xl">
             <h3 class="text-xl font-serif font-bold mb-1 text-main">Issue Tickets</h3>
@@ -291,7 +275,6 @@
         </div>
     </div>
 
-    <!-- Result Modal -->
     <div id="modal-result" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/90 backdrop-blur-md p-4 transition-opacity duration-300">
         <div class="w-full max-w-md glass-panel rounded-2xl p-8 flex flex-col max-h-[80vh] relative border border-emerald-500/30">
             <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500 shadow-[0_0_20px_#10b981]"></div>
@@ -304,7 +287,6 @@
         </div>
     </div>
 
-    <!-- Email Modal -->
     <div id="modal-send-email" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
         <div class="w-full max-w-sm glass-panel rounded-2xl p-6 shadow-2xl">
             <h3 class="text-lg font-bold mb-4 flex items-center text-main"><i class="fa-solid fa-envelope text-primary-400 mr-2"></i>Send Ticket</h3>
@@ -323,7 +305,7 @@
 
     <script>
         const API_URL = 'https://ethimp0.shop/api5.php';
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyqC8t7Q5SzB8_6ZNkVHtrJ4dF9PNR-d614NSfdvRkfHwNDBxlxkzPxmFsBX6q4hxzXYQ/exec';
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxrB2fSJ7IEzKM3Xa2i_My9ikRDmkKI2TmRkX1U2nH2cwcuLQWA02ponvYUG0B1yLV2Tw/exec';
 
         async function api(act, body={}) {
             let url = `${API_URL}?action=${act}`;
@@ -359,7 +341,8 @@
                     if(auth.mode === 'register') { alert('登録完了'); auth.toggleMode('login'); }
                     else { user = res.user; localStorage.setItem('prop_u', JSON.stringify(user)); app.init(); }
                 } catch(err) {
-                    const msg = document.getElementById('auth-msg'); if(msg) msg.textContent = err.message;
+                    const msgEl = document.getElementById('auth-msg');
+                    if (msgEl) msgEl.textContent = err.message || 'エラーが発生しました';
                     document.getElementById('auth-error-box').classList.remove('hidden');
                 }
             },
@@ -400,8 +383,14 @@
         };
 
         const ui = {
-            showModal: (id) => document.getElementById(id).classList.remove('hidden'),
-            closeModal: (id) => document.getElementById(id).classList.add('hidden'),
+            showModal: (id) => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('hidden');
+            },
+            closeModal: (id) => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            },
             toggleTheme: () => { const n = document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark'; document.documentElement.setAttribute('data-theme', n); localStorage.setItem('theme', n); },
             initNav: () => {
                 const links = [{l:'DASHBOARD',i:'fa-layer-group',v:'dashboard'},{l:'SCANNER',i:'fa-expand',v:'scanner'}];
@@ -427,8 +416,10 @@
             },
             toggleCreateSeatConfig: () => {
                 const t = document.querySelector('input[name="seatType"]:checked').value;
-                document.getElementById('conf-designated').classList.toggle('hidden', t!=='designated');
-                document.getElementById('conf-free').classList.toggle('hidden', t!=='free');
+                const des = document.getElementById('conf-designated');
+                const free = document.getElementById('conf-free');
+                if (des) des.classList.toggle('hidden', t !== 'designated');
+                if (free) free.classList.toggle('hidden', t !== 'free');
             },
             setScanStatus: (s) => {
                 const f = document.getElementById('scan-frame'); if(!f) return;
@@ -449,7 +440,7 @@
                 }
             },
             loadDash: async () => {
-                const res = await api('get_events');
+                const res = await api('get_events', {organizerId: user.id});
                 document.getElementById('stats-events').textContent = res.events.length;
                 document.getElementById('org-event-list').innerHTML = res.events.map(e => {
                     const style = e.seatConfig?.imageUrl ? `background-image: url('${e.seatConfig.imageUrl}');` : '';
@@ -497,8 +488,11 @@
                 let info = cfg.type === 'free' ? `FREE SEATING (MAX: ${cfg.capacity})` : `DESIGNATED (${cfg.rows?cfg.rows.join('-'):'?'} / 1-${cfg.colMax})`;
                 document.getElementById('detail-config-info').textContent = info;
                 if(cfg.imageUrl) {
-                    document.getElementById('detail-hero-img').style.backgroundImage = `url('${cfg.imageUrl}')`;
-                    document.getElementById('detail-hero-img').style.opacity = '0.4';
+                    const hero = document.getElementById('detail-hero-img');
+                    if (hero) {
+                        hero.style.backgroundImage = `url('${cfg.imageUrl}')`;
+                        hero.style.opacity = '0.4';
+                    }
                 }
 
                 const res = await api('get_event_tickets', {eventId: curEvt.id});
@@ -511,7 +505,7 @@
                         <td class="px-4 py-3 text-xs text-muted">${t.owner_name||'-'}</td>
                         <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${t.status==='used'?'bg-slate-800 text-slate-500':'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">${t.status==='used'?'USED':'ACTIVE'}</span></td>
                         <td class="px-4 py-3 text-right">
-                            <button onclick='logic.openEmailModal(${JSON.stringify({seat:t.seat_number, claimCode:t.claim_code, ticketId:t.id})})' class="w-8 h-8 rounded bg-primary-500/5 hover:bg-primary-400 hover:text-white transition flex items-center justify-center ${t.mail_sent?'text-emerald-400 border border-emerald-500/30':''}"><i class="fa-solid fa-envelope"></i></button>
+                            <button onclick='logic.openEmailModal(${JSON.stringify({seat:t.seat_number, claimCode:t.claim_code, ticketId:t.id})})' class="w-8 h-8 rounded bg-primary-500/5 hover:bg-primary-400 hover:text-black transition flex items-center justify-center ${t.mail_sent?'text-emerald-400 border border-emerald-500/30':''}"><i class="fa-solid fa-envelope"></i></button>
                         </td>
                     </tr>`
                 ).join('');
@@ -523,7 +517,9 @@
                 const cfg = curEvt.config || {};
                 const isFree = cfg.type === 'free';
                 
-                document.getElementById('issue-designated-opts').classList.toggle('hidden', isFree);
+                const opts = document.getElementById('issue-designated-opts');
+                if (opts) opts.classList.toggle('hidden', isFree);
+
                 if(!isFree && cfg.rows) {
                     ui.popOpts(); 
                     document.getElementById('issue-row-s').value = cfg.rows[0];
@@ -531,13 +527,18 @@
                     document.getElementById('issue-col-e').value = cfg.colMax;
                 }
                 
+                const limitInfo = document.getElementById('issue-limit-info');
+                const qtyInput = document.getElementById('issue-qty');
+
                 if(isFree) {
                     const issued = eventTickets.length;
                     const cap = parseInt(cfg.capacity) || 9999;
                     const remain = cap - issued;
-                    document.getElementById('issue-limit-info').textContent = `REMAINING: ${remain} / CAP: ${cap}`;
-                    document.getElementById('issue-qty').max = remain;
-                } else { document.getElementById('issue-limit-info').textContent = ''; }
+                    if (limitInfo) limitInfo.textContent = `REMAINING: ${remain} / CAP: ${cap}`;
+                    if (qtyInput) qtyInput.max = remain;
+                } else { 
+                    if (limitInfo) limitInfo.textContent = ''; 
+                }
 
                 ui.showModal('modal-issue-ticket');
             },
