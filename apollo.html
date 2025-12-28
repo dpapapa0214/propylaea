@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apollo Learning</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- QR & Compression Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', '"Noto Sans JP"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            400: '#2dd4bf', 
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            900: '#134e4a',
+                        },
+                        accent: {
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'glow': '0 0 15px rgba(20, 184, 166, 0.3)',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                        'slide-in-right': 'slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        slideInRight: {
+                            '0%': { transform: 'translateX(20px)', opacity: '0' },
+                            '100%': { transform: 'translateX(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #f8fafc; color: #334155; }
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+        
+        /* QR Code specific styles to handle large images */
+        #qr-display-area img, #qr-display-area canvas {
+            max-width: 100%;
+            height: auto !important;
+        }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden bg-[#F1F5F9]">
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-20 lg:w-64 bg-white border-r border-gray-200 flex flex-col justify-between transition-all duration-300 z-20 shrink-0">
+        <div>
+            <div class="h-20 flex items-center justify-center lg:justify-start lg:px-6 border-b border-gray-100">
+                <div class="w-10 h-10 bg-gradient-to-br from-brand-400 to-brand-600 rounded-xl flex items-center justify-center text-white shadow-glow">
+                    <i class="fa-solid fa-rocket"></i>
+                </div>
+                <span class="ml-3 font-bold text-xl text-gray-800 hidden lg:block tracking-tight">Apollo</span>
+            </div>
+            
+            <nav class="p-4 space-y-2">
+                <button onclick="app.router('dashboard')" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl text-gray-500 hover:bg-brand-50 hover:text-brand-600 transition-colors group">
+                    <i class="fa-solid fa-grid-2 text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="font-medium hidden lg:block">ダッシュボード</span>
+                </button>
+                
+                <button onclick="app.router('cloud')" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl text-gray-500 hover:bg-brand-50 hover:text-brand-600 transition-colors group">
+                    <i class="fa-solid fa-cloud text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="font-medium hidden lg:block">クラウド共有履歴</span>
+                </button>
+
+                <div class="pt-4 pb-2">
+                    <div class="h-px bg-gray-100 mx-2"></div>
+                </div>
+                
+                <!-- Fixed QR Scan Button Style -->
+                <button onclick="app.qr.startScan()" class="w-full flex items-center gap-4 px-3 py-3 rounded-xl text-gray-500 hover:bg-brand-50 hover:text-brand-600 transition-colors group">
+                    <i class="fa-solid fa-qrcode text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="font-medium hidden lg:block">QRスキャン</span>
+                </button>
+            </nav>
+        </div>
+        
+        <div class="p-4 border-t border-gray-100">
+            <div class="flex items-center gap-3 px-2 py-2 cursor-pointer hover:bg-gray-50 transition-colors rounded-xl" onclick="app.modal.open('settings')">
+                <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
+                    <i class="fa-solid fa-cog"></i>
+                </div>
+                <div class="hidden lg:block">
+                    <p class="text-xs font-bold text-gray-700">設定・データ管理</p>
+                    <p class="text-[10px] text-gray-400">v3.3.0</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="app-root" class="flex-1 overflow-hidden relative">
+        <!-- Views injected here -->
+    </main>
+
+    <!-- Toast -->
+    <div id="toast-container" class="fixed top-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- TEMPLATES -->
+
+    <!-- 1. Dashboard -->
+    <template id="view-dashboard">
+        <div class="h-full flex flex-col overflow-y-auto custom-scroll p-6 lg:p-10">
+            <header class="flex justify-between items-end mb-10">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">My Classes</h1>
+                    <p class="text-gray-500">学習するクラスを選択または作成してください</p>
+                </div>
+                <button onclick="app.modal.open('create-class')" class="bg-gray-900 hover:bg-black text-white px-6 py-3 rounded-xl shadow-lg shadow-gray-200 transition-all flex items-center gap-2 font-bold active:scale-95">
+                    <i class="fa-solid fa-plus"></i> 新規クラス
+                </button>
+            </header>
+
+            <div id="class-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20"></div>
+            
+            <div id="empty-state" class="hidden flex-1 flex flex-col items-center justify-center text-gray-300 min-h-[400px]">
+                <i class="fa-solid fa-layer-group text-6xl mb-4 text-gray-200"></i>
+                <p class="text-lg font-medium">クラスがまだありません</p>
+            </div>
+        </div>
+    </template>
+
+    <!-- NEW: Cloud History View -->
+    <template id="view-cloud">
+        <div class="h-full flex flex-col overflow-y-auto custom-scroll p-6 lg:p-10">
+            <header class="mb-10">
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Cloud History</h1>
+                <p class="text-gray-500">これまでにクラウド共有したレッスンの履歴です。</p>
+            </header>
+
+            <div id="cloud-list" class="space-y-4 max-w-4xl"></div>
+            
+            <div id="cloud-empty" class="hidden flex-col items-center justify-center text-gray-300 py-20">
+                <i class="fa-solid fa-cloud-arrow-up text-6xl mb-4 text-gray-200"></i>
+                <p class="text-lg font-medium">共有履歴はありません</p>
+            </div>
+        </div>
+    </template>
+
+    <!-- 2. Class Detail -->
+    <template id="view-class">
+        <div class="h-full flex flex-col overflow-hidden bg-white">
+            <div class="bg-gray-900 text-white p-8 lg:p-10 shrink-0 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-96 h-96 bg-brand-500 rounded-full blur-3xl opacity-20 -mr-20 -mt-20 pointer-events-none"></div>
+                
+                <button onclick="app.router('dashboard')" class="text-gray-400 hover:text-white mb-6 flex items-center gap-2 transition-colors relative z-10">
+                    <i class="fa-solid fa-arrow-left"></i> 戻る
+                </button>
+                
+                <div class="flex justify-between items-start relative z-10">
+                    <div>
+                        <h1 id="class-title" class="text-3xl lg:text-4xl font-bold mb-2">Class Title</h1>
+                        <p id="class-desc" class="text-gray-400 max-w-2xl">Description goes here...</p>
+                    </div>
+                    <div class="flex gap-2">
+                         <button onclick="app.exportClass()" class="bg-white/10 hover:bg-white/20 text-white p-3 rounded-lg backdrop-blur-sm transition-colors" title="このクラスをエクスポート">
+                            <i class="fa-solid fa-download"></i>
+                        </button>
+                        <button onclick="app.deleteClass()" class="bg-red-500/20 hover:bg-red-500/30 text-red-200 p-3 rounded-lg backdrop-blur-sm transition-colors" title="クラスを削除">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 flex flex-col overflow-hidden">
+                <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
+                    <h2 class="font-bold text-gray-700 flex items-center gap-2">
+                        <i class="fa-solid fa-list text-brand-500"></i> レッスン一覧
+                    </h2>
+                    <button onclick="app.createLesson()" class="text-brand-600 hover:bg-brand-50 px-4 py-2 rounded-lg font-bold transition-colors text-sm">
+                        <i class="fa-solid fa-plus mr-1"></i> レッスン追加
+                    </button>
+                </div>
+                
+                <div id="lesson-list" class="flex-1 overflow-y-auto custom-scroll p-8 space-y-4 bg-gray-50/50"></div>
+            </div>
+        </div>
+    </template>
+
+    <!-- 2.5 Lesson Detail View -->
+    <template id="view-lesson-detail">
+        <div class="h-full flex flex-col overflow-y-auto custom-scroll bg-white">
+            <div class="max-w-4xl mx-auto w-full p-8 lg:p-12">
+                <button onclick="app.backToClass()" class="text-gray-400 hover:text-gray-800 mb-8 flex items-center gap-2 transition-colors">
+                    <i class="fa-solid fa-arrow-left"></i> クラスに戻る
+                </button>
+
+                <div class="flex flex-col md:flex-row justify-between items-start gap-6 mb-10">
+                    <div>
+                        <div class="flex items-center gap-3 mb-3">
+                            <span class="bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Lesson Detail</span>
+                        </div>
+                        <h1 id="detail-title" class="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Lesson Title</h1>
+                        <p id="detail-desc" class="text-gray-600 leading-relaxed text-lg">Description...</p>
+                    </div>
+                    <div class="flex flex-wrap gap-3 shrink-0">
+                        <!-- Cloud Share Button -->
+                        <button onclick="app.cloud.upload()" class="px-4 py-3 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-bold transition-colors border border-indigo-100" title="クラウドに保存して共有コードを発行">
+                            <i class="fa-solid fa-cloud-arrow-up mr-2"></i> クラウド共有
+                        </button>
+                        <!-- Local QR Button -->
+                        <button onclick="app.qr.generate()" class="px-4 py-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 font-bold transition-colors" title="オフラインQRコード作成">
+                            <i class="fa-solid fa-qrcode mr-2"></i> QR作成
+                        </button>
+                        <button onclick="app.router('editor', app.currentClassId, app.currentLessonId)" class="px-5 py-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 font-bold transition-colors">
+                            <i class="fa-solid fa-pen mr-2"></i> 編集
+                        </button>
+                        <button onclick="app.router('player', app.currentClassId, app.currentLessonId)" class="px-8 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700 font-bold shadow-lg shadow-brand-500/30 transition-all active:scale-95">
+                            <i class="fa-solid fa-play mr-2"></i> 学習開始
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                    <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                        <div class="text-gray-400 text-sm font-bold uppercase mb-2">Lecture Pages</div>
+                        <div class="text-3xl font-bold text-gray-800" id="stat-lecture">0</div>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                        <div class="text-gray-400 text-sm font-bold uppercase mb-2">Quizzes</div>
+                        <div class="text-3xl font-bold text-gray-800" id="stat-quiz">0</div>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                        <div class="text-gray-400 text-sm font-bold uppercase mb-2">Written Questions</div>
+                        <div class="text-3xl font-bold text-gray-800" id="stat-written">0</div>
+                    </div>
+                </div>
+
+                <!-- Mistakes Section -->
+                <div id="mistakes-section" class="hidden">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation text-red-500"></i> 
+                        あなたの弱点 (My Mistakes)
+                        <span id="mistake-count" class="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full">0</span>
+                    </h2>
+                    <div id="mistakes-list" class="space-y-4">
+                        <!-- Dynamic Mistake Items -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- 3. Editor -->
+    <template id="view-editor">
+        <div class="h-full flex flex-col bg-[#F8FAFC]">
+            <header class="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-4">
+                    <button onclick="app.backToLessonDetail()" class="text-gray-400 hover:text-gray-700">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                    <span class="font-bold text-gray-500 text-sm uppercase tracking-wider">Editor Mode</span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="app.modal.open('bulk-import')" class="text-brand-600 bg-brand-50 hover:bg-brand-100 px-4 py-2 rounded-lg font-bold transition-colors text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-file-import"></i> 一括入力
+                    </button>
+                    <button onclick="app.saveLesson()" class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-2 rounded-lg font-bold shadow-soft transition-all active:scale-95">
+                        保存して終了
+                    </button>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto custom-scroll">
+                <div class="max-w-4xl mx-auto p-6 lg:p-10 space-y-8">
+                    <!-- Basic Info -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <label class="block text-xs font-bold text-gray-400 mb-1 uppercase">Lesson Title</label>
+                        <input type="text" id="edit-title" class="w-full text-2xl font-bold border-b border-gray-200 focus:border-brand-500 outline-none py-2 mb-4 bg-transparent text-gray-800" placeholder="レッスンタイトルを入力">
+                        
+                        <label class="block text-xs font-bold text-gray-400 mb-1 uppercase">Description</label>
+                        <input type="text" id="edit-desc" class="w-full text-sm text-gray-600 border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none" placeholder="レッスンの簡単な説明">
+                    </div>
+
+                    <!-- Step 1: Lecture Pages -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                                <span class="w-6 h-6 rounded bg-blue-100 text-blue-600 flex items-center justify-center text-xs">1</span> 基礎学習 (スライド形式)
+                            </h3>
+                            <button onclick="app.editor.addLecturePage()" class="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg font-bold hover:bg-blue-100 transition-colors">
+                                + ページ追加
+                            </button>
+                        </div>
+                        <div id="editor-lecture-container" class="space-y-6"></div>
+                    </div>
+
+                    <!-- Step 2: Quizzes -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                                <span class="w-6 h-6 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs">2</span> 4択クイズ
+                            </h3>
+                            <button onclick="app.editor.addQuizItem()" class="text-xs bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg font-bold hover:bg-indigo-100 transition-colors">
+                                + 問題追加
+                            </button>
+                        </div>
+                        <div id="editor-quiz-list" class="space-y-4"></div>
+                    </div>
+
+                    <!-- Step 3: Written -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                                <span class="w-6 h-6 rounded bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs">3</span> 記述問題
+                            </h3>
+                            <button onclick="app.editor.addWrittenItem()" class="text-xs bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-lg font-bold hover:bg-emerald-100 transition-colors">
+                                + 問題追加
+                            </button>
+                        </div>
+                        <div id="editor-written-list" class="space-y-4"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- 4. Player View -->
+    <template id="view-player">
+        <div class="h-full flex flex-col bg-white">
+            <header class="h-16 border-b border-gray-200 flex items-center justify-between px-6 shrink-0 bg-white z-20">
+                <div class="flex items-center gap-4">
+                    <button onclick="app.backToLessonDetail()" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 transition-colors">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <div class="h-4 w-px bg-gray-200"></div>
+                    <span id="player-lesson-title" class="font-bold text-gray-800 text-sm truncate max-w-[200px] lg:max-w-md">Lesson Title</span>
+                </div>
+                
+                <div class="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
+                    <div id="step-ind-1" class="px-3 py-1 rounded-md text-xs font-bold text-gray-400 transition-all">Lecture</div>
+                    <div id="step-ind-2" class="px-3 py-1 rounded-md text-xs font-bold text-gray-400 transition-all">Quiz</div>
+                    <div id="step-ind-3" class="px-3 py-1 rounded-md text-xs font-bold text-gray-400 transition-all">Written</div>
+                </div>
+            </header>
+
+            <div class="flex-1 lg:grid lg:grid-cols-2 overflow-hidden relative">
+                <div id="pane-left" class="h-full overflow-y-auto custom-scroll p-6 lg:p-10 bg-white"></div>
+                <div id="pane-right" class="h-full overflow-y-auto custom-scroll p-6 lg:p-10 bg-gray-50 border-l border-gray-200 hidden lg:block"></div>
+                <div id="mobile-feedback-overlay" class="absolute inset-x-0 bottom-0 top-16 bg-white z-30 transform translate-y-full transition-transform duration-300 lg:hidden flex flex-col">
+                    <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                        <span class="font-bold text-gray-700">解説・フィードバック</span>
+                        <button onclick="app.player.toggleMobileFeedback(false)" class="text-gray-400 hover:text-gray-600">
+                            <i class="fa-solid fa-chevron-down"></i> 閉じる
+                        </button>
+                    </div>
+                    <div id="mobile-feedback-content" class="flex-1 overflow-y-auto p-6"></div>
+                </div>
+            </div>
+
+            <div class="lg:hidden p-4 border-t border-gray-200 bg-white" id="mobile-action-bar" style="display:none">
+                <button onclick="app.player.toggleMobileFeedback(true)" class="w-full bg-brand-600 text-white py-3 rounded-xl font-bold">解説を見る</button>
+            </div>
+        </div>
+    </template>
+
+    <!-- Modal: Create Class -->
+    <div id="modal-create-class" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl transform scale-95 transition-transform duration-300" id="modal-content">
+            <h3 class="text-xl font-bold mb-6 text-gray-800">新しいクラスを作成</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">クラス名</label>
+                    <input type="text" id="new-class-title" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-brand-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">説明</label>
+                    <textarea id="new-class-desc" rows="3" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-8">
+                <button onclick="app.modal.close('create-class')" class="px-5 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl transition-colors font-bold text-sm">キャンセル</button>
+                <button onclick="app.addClass()" class="px-6 py-2.5 bg-gray-900 hover:bg-black text-white rounded-xl transition-colors font-bold text-sm shadow-lg">作成する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Bulk Import -->
+    <div id="modal-bulk-import" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl w-full max-w-2xl h-[90vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-300" id="modal-content">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-gray-800">一括入力 (テキストインポート)</h3>
+                <button onclick="app.modal.close('bulk-import')" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="flex-1 flex flex-col p-6 overflow-hidden">
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4 text-xs text-gray-600 overflow-y-auto max-h-32">
+                    <p class="font-bold mb-1">使用可能なフォーマット:</p>
+                    <pre class="whitespace-pre-wrap font-mono bg-white p-2 rounded border border-gray-200 mt-1">
+[TITLE] レッスンタイトル
+[DESC] 説明文
+[LECTURE]
+講義ページ1の内容
+---
+講義ページ2の内容
+[QUIZ]
+Q: 問題文
+1: 選択肢1
+...
+C: 2 (正解番号)
+E: 解説文
+[WRITTEN]
+Q: 記述問題文
+M: 模範解答
+G: 採点基準 (Rubric)
+E: 解説文</pre>
+                </div>
+                <textarea id="bulk-import-text" class="flex-1 w-full bg-white border border-gray-200 rounded-xl p-4 focus:ring-2 focus:ring-brand-500 outline-none resize-none font-mono text-sm" placeholder="ここにテキストを入力..."></textarea>
+            </div>
+            <div class="p-6 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 rounded-b-2xl">
+                <button onclick="app.modal.close('bulk-import')" class="px-5 py-2.5 text-gray-500 hover:bg-gray-200 rounded-xl transition-colors font-bold text-sm">キャンセル</button>
+                <button onclick="app.editor.processBulkImport()" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl transition-colors font-bold text-sm shadow-lg">読み込む</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Settings (Redesigned) -->
+    <div id="modal-settings" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl transform scale-95 transition-transform duration-300" id="modal-content">
+            <h3 class="text-xl font-bold mb-6 text-gray-800">設定・データ管理</h3>
+            <div class="space-y-4">
+                
+                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <h4 class="font-bold text-gray-700 mb-2 text-sm">データバックアップ</h4>
+                    <p class="text-xs text-gray-500 mb-3">すべての学習データをJSONファイルとして保存します。</p>
+                    <button onclick="app.exportData()" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white bg-gray-800 hover:bg-black transition-colors font-bold text-sm">
+                        <i class="fa-solid fa-cloud-arrow-down"></i> バックアップ保存
+                    </button>
+                </div>
+
+                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <h4 class="font-bold text-gray-700 mb-2 text-sm">データ復元</h4>
+                    <p class="text-xs text-gray-500 mb-3">バックアップファイルからデータを復元します。</p>
+                    <label class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 transition-colors font-bold text-sm cursor-pointer">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> ファイルを選択
+                        <input type="file" class="hidden" onchange="app.importData(this)">
+                    </label>
+                </div>
+
+            </div>
+            <div class="flex justify-center mt-8">
+                <button onclick="app.modal.close('settings')" class="px-8 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl transition-colors font-bold text-sm">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: QR Show -->
+    <div id="modal-qr-show" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl w-full max-w-xl p-6 shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col items-center" id="modal-content">
+            <h3 class="text-xl font-bold mb-2 text-gray-800" id="qr-title">共有用QR</h3>
+            <p id="qr-desc" class="text-sm text-gray-500 mb-4 text-center">Apolloアプリでスキャンしてください</p>
+            
+            <div id="qr-display-area" class="bg-white p-2 rounded-lg border border-gray-200 mb-4 flex justify-center items-center overflow-hidden"></div>
+            
+            <div id="qr-code-text-container" class="hidden w-full text-center mb-4">
+                <p class="text-xs font-bold text-gray-400 mb-1">共有コード</p>
+                <div class="flex items-center gap-2 justify-center">
+                    <code id="qr-code-text" class="bg-gray-100 px-3 py-2 rounded text-lg font-mono font-bold text-brand-600 tracking-wider"></code>
+                    <button onclick="navigator.clipboard.writeText(Utils.get('qr-code-text').innerText); app.toast('コピーしました','success')" class="text-gray-400 hover:text-gray-600 p-2"><i class="fa-solid fa-copy"></i></button>
+                </div>
+            </div>
+
+            <button onclick="app.modal.close('qr-show')" class="w-full px-5 py-3 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors font-bold text-sm">閉じる</button>
+        </div>
+    </div>
+
+    <!-- Modal: QR Scan -->
+    <div id="modal-qr-scan" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col items-center" id="modal-content">
+            <h3 class="text-xl font-bold mb-4 text-gray-800">QRコードをスキャン</h3>
+            <div class="relative w-full aspect-square bg-black rounded-xl overflow-hidden mb-4">
+                <video id="qr-video" class="w-full h-full object-cover"></video>
+                <div class="absolute inset-0 border-2 border-brand-500 opacity-50 pointer-events-none"></div>
+                <div id="qr-overlay-msg" class="absolute inset-0 flex items-center justify-center text-white bg-black/50 text-sm hidden">カメラを起動中...</div>
+            </div>
+            <button onclick="app.qr.stopScan()" class="w-full px-5 py-3 text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors font-bold text-sm">キャンセル</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        // TODO: ここにGASのWebアプリURLを入力してください
+        const FIXED_API_URL = "https://script.google.com/macros/s/AKfycbyQZo2Gevc-Ri5IDOOj-oOC6RF3OSj32magIN5usqald6V8JGbY44iHiauX2IrjxGIB/exec"; 
+
+        // --- Utilities ---
+        const Utils = {
+            id: () => Math.random().toString(36).substr(2, 9),
+            get: (id) => document.getElementById(id),
+            escapeHtml: (str) => {
+                if (!str) return '';
+                return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m])).replace(/\n/g, '<br>');
+            },
+            downloadJSON: (data, filename) => {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+                const anchor = document.createElement('a');
+                anchor.setAttribute("href", dataStr);
+                anchor.setAttribute("download", filename);
+                document.body.appendChild(anchor);
+                anchor.click();
+                anchor.remove();
+            }
+        };
+
+        // --- Store ---
+        const Store = {
+            key: 'lumina_data_v3.0',
+            data: { classes: [], mistakes: [], sharedHistory: [] }, // sharedHistory added
+            load() {
+                const saved = localStorage.getItem(this.key);
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        if(!parsed.mistakes) parsed.mistakes = []; 
+                        if(!parsed.sharedHistory) parsed.sharedHistory = []; 
+                        this.data = parsed;
+                    } catch(e) { console.error("Data Load Error", e); }
+                }
+            },
+            save() { localStorage.setItem(this.key, JSON.stringify(this.data)); },
+            
+            getClass(id) { return this.data.classes.find(c => c.id === id); },
+            addClass(title, desc) {
+                const id = Utils.id();
+                this.data.classes.push({ id, title, desc, lessons: [] });
+                this.save();
+                return id;
+            },
+            deleteClass(id) {
+                this.data.classes = this.data.classes.filter(c => c.id !== id);
+                this.save();
+            },
+            updateLesson(classId, lesson) {
+                const cls = this.getClass(classId);
+                const idx = cls.lessons.findIndex(l => l.id === lesson.id);
+                if (idx !== -1) cls.lessons[idx] = lesson;
+                else cls.lessons.push(lesson);
+                this.save();
+            },
+            deleteLesson(classId, lessonId) {
+                const cls = this.getClass(classId);
+                cls.lessons = cls.lessons.filter(l => l.id !== lessonId);
+                this.save();
+            },
+            addMistake(classId, lessonId, type, question, answer, note) {
+                const exists = this.data.mistakes.find(m => m.question === question && m.lessonId === lessonId);
+                if(!exists) {
+                    this.data.mistakes.push({ 
+                        id: Utils.id(), 
+                        date: new Date().toISOString(), 
+                        classId, lessonId, type, question, answer, note 
+                    });
+                    this.save();
+                }
+            },
+            addSharedHistory(code, title) {
+                this.data.sharedHistory.unshift({
+                    code: code,
+                    title: title,
+                    date: new Date().toISOString()
+                });
+                this.save();
+            }
+        };
+
+        // --- App Logic ---
+        const App = {
+            currentClassId: null,
+            currentLessonId: null,
+            
+            init() {
+                Store.load();
+                this.router('dashboard');
+            },
+
+            toast(msg, type='info') {
+                const el = document.createElement('div');
+                const styles = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-500' : 'bg-gray-800';
+                el.className = `${styles} text-white px-6 py-4 rounded-xl shadow-xl flex items-center gap-3 animate-fade-in min-w-[320px]`;
+                el.innerHTML = `<i class="fa-solid ${type==='success'?'fa-check-circle':'fa-info-circle'}"></i> <span class="font-bold">${msg}</span>`;
+                Utils.get('toast-container').appendChild(el);
+                setTimeout(() => {
+                    el.style.opacity = '0';
+                    setTimeout(() => el.remove(), 300);
+                }, 3000);
+            },
+
+            router(route, p1, p2) {
+                const root = Utils.get('app-root');
+                root.innerHTML = '';
+                root.scrollTop = 0;
+
+                const templates = {
+                    'dashboard': () => {
+                        this.currentClassId = null;
+                        this.currentLessonId = null;
+                        root.appendChild(Utils.get('view-dashboard').content.cloneNode(true));
+                        this.renderDashboard();
+                    },
+                    'cloud': () => {
+                        root.appendChild(Utils.get('view-cloud').content.cloneNode(true));
+                        this.renderCloudHistory();
+                    },
+                    'class': () => {
+                        this.currentClassId = p1;
+                        this.currentLessonId = null;
+                        root.appendChild(Utils.get('view-class').content.cloneNode(true));
+                        this.renderClassView();
+                    },
+                    'lesson-detail': () => {
+                        this.currentClassId = p1;
+                        this.currentLessonId = p2;
+                        root.appendChild(Utils.get('view-lesson-detail').content.cloneNode(true));
+                        this.renderLessonDetail();
+                    },
+                    'editor': () => {
+                        this.currentClassId = p1;
+                        this.currentLessonId = p2;
+                        root.appendChild(Utils.get('view-editor').content.cloneNode(true));
+                        this.editor.init(p1, p2);
+                    },
+                    'player': () => {
+                        this.currentClassId = p1;
+                        this.currentLessonId = p2;
+                        root.appendChild(Utils.get('view-player').content.cloneNode(true));
+                        this.player.init(p1, p2);
+                    }
+                };
+                if (templates[route]) templates[route]();
+            },
+
+            // --- Dashboard ---
+            renderDashboard() {
+                const list = Utils.get('class-list');
+                const empty = Utils.get('empty-state');
+                list.innerHTML = '';
+
+                if (!Store.data.classes.length) {
+                    empty.classList.remove('hidden');
+                    return;
+                }
+
+                Store.data.classes.forEach(c => {
+                    const el = document.createElement('div');
+                    el.className = 'bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group relative overflow-hidden';
+                    el.onclick = (e) => { if(!e.target.closest('button')) this.router('class', c.id); };
+                    el.innerHTML = `
+                        <div class="flex justify-between items-start mb-6 relative z-10">
+                            <div class="w-14 h-14 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl flex items-center justify-center text-gray-400 group-hover:text-brand-600 transition-colors">
+                                <i class="fa-solid fa-shapes text-2xl"></i>
+                            </div>
+                            <button onclick="app.exportClass('${c.id}')" class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors" title="エクスポート">
+                                <i class="fa-solid fa-download"></i>
+                            </button>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-2 line-clamp-1">${Utils.escapeHtml(c.title)}</h3>
+                        <p class="text-gray-500 text-sm line-clamp-2 h-10 mb-4">${Utils.escapeHtml(c.desc || '説明なし')}</p>
+                        <div class="flex items-center gap-2 text-xs font-bold text-gray-400 bg-gray-50 inline-flex px-3 py-1.5 rounded-lg">
+                            <i class="fa-solid fa-layer-group"></i> ${c.lessons.length} Lessons
+                        </div>
+                    `;
+                    list.appendChild(el);
+                });
+            },
+
+            // --- Cloud History ---
+            renderCloudHistory() {
+                const list = Utils.get('cloud-list');
+                const empty = Utils.get('cloud-empty');
+                const history = Store.data.sharedHistory || [];
+
+                list.innerHTML = '';
+                if (history.length === 0) {
+                    empty.classList.remove('hidden');
+                    empty.classList.add('flex');
+                    return;
+                }
+
+                history.forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = 'bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between group';
+                    el.innerHTML = `
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-xs font-bold text-brand-600 bg-brand-50 px-2 py-1 rounded">Code: ${item.code}</span>
+                                <span class="text-xs text-gray-400">${new Date(item.date).toLocaleString()}</span>
+                            </div>
+                            <h3 class="font-bold text-gray-800">${Utils.escapeHtml(item.title)}</h3>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="app.qr.generateCloud('${item.code}')" class="p-2 text-gray-400 hover:text-brand-600 bg-gray-50 hover:bg-brand-50 rounded-lg transition-colors" title="QR表示">
+                                <i class="fa-solid fa-qrcode"></i>
+                            </button>
+                            <button onclick="navigator.clipboard.writeText('${item.code}'); app.toast('コードをコピーしました', 'success')" class="p-2 text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors" title="コードをコピー">
+                                <i class="fa-solid fa-copy"></i>
+                            </button>
+                        </div>
+                    `;
+                    list.appendChild(el);
+                });
+            },
+
+            // --- Class View ---
+            renderClassView() {
+                const cls = Store.getClass(this.currentClassId);
+                if (!cls) return this.router('dashboard');
+                
+                Utils.get('class-title').innerText = cls.title;
+                Utils.get('class-desc').innerText = cls.desc;
+                
+                const list = Utils.get('lesson-list');
+                list.innerHTML = '';
+
+                cls.lessons.forEach(l => {
+                    const el = document.createElement('div');
+                    el.className = 'bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between group cursor-pointer';
+                    el.onclick = (e) => { if(!e.target.closest('button')) this.router('lesson-detail', cls.id, l.id); };
+                    
+                    const qCount = (l.content.quizzes || []).length;
+                    const wCount = (l.content.written || []).length;
+                    
+                    el.innerHTML = `
+                        <div class="flex items-start gap-4">
+                            <div class="mt-1 w-10 h-10 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center font-bold text-sm shrink-0">
+                                <i class="fa-solid fa-book"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-800 text-lg">${Utils.escapeHtml(l.title)}</h4>
+                                <p class="text-gray-500 text-sm mb-2 line-clamp-1">${Utils.escapeHtml(l.description || '説明なし')}</p>
+                                <div class="flex gap-3 text-xs font-medium text-gray-400">
+                                    <span class="bg-gray-100 px-2 py-0.5 rounded"><i class="fa-solid fa-list-check mr-1"></i> Quiz: ${qCount}</span>
+                                    <span class="bg-gray-100 px-2 py-0.5 rounded"><i class="fa-solid fa-pen-nib mr-1"></i> Write: ${wCount}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="app.exportLesson('${cls.id}', '${l.id}')" class="p-2 text-gray-400 hover:text-brand-600 hover:bg-gray-50 rounded-lg" title="エクスポート">
+                                <i class="fa-solid fa-download"></i>
+                            </button>
+                            <button onclick="app.router('editor', '${cls.id}', '${l.id}')" class="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-50 rounded-lg" title="編集">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button onclick="app.deleteLesson('${l.id}')" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="削除">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                    list.appendChild(el);
+                });
+            },
+
+            // --- Lesson Detail View ---
+            renderLessonDetail() {
+                const cls = Store.getClass(this.currentClassId);
+                const lesson = cls.lessons.find(l => l.id === this.currentLessonId);
+                
+                if (!lesson) return this.backToClass();
+
+                Utils.get('detail-title').innerText = lesson.title;
+                Utils.get('detail-desc').innerText = lesson.description || '説明はありません';
+                
+                Utils.get('stat-lecture').innerText = lesson.content.lecture.length;
+                Utils.get('stat-quiz').innerText = lesson.content.quizzes.length;
+                Utils.get('stat-written').innerText = lesson.content.written.length;
+
+                const mistakes = Store.data.mistakes.filter(m => m.lessonId === this.currentLessonId);
+                if (mistakes.length > 0) {
+                    const section = Utils.get('mistakes-section');
+                    const list = Utils.get('mistakes-list');
+                    section.classList.remove('hidden');
+                    Utils.get('mistake-count').innerText = mistakes.length;
+                    
+                    list.innerHTML = '';
+                    mistakes.forEach(m => {
+                        const el = document.createElement('div');
+                        el.className = 'bg-red-50 border border-red-100 rounded-xl p-4';
+                        el.innerHTML = `
+                            <div class="flex items-center gap-2 text-xs font-bold text-red-500 mb-2">
+                                <span class="uppercase">${m.type}</span>
+                                <span class="text-red-300">•</span>
+                                <span>${new Date(m.date).toLocaleDateString()}</span>
+                            </div>
+                            <p class="font-bold text-gray-800 mb-1">${Utils.escapeHtml(m.question)}</p>
+                            ${m.note ? `<p class="text-sm text-gray-500 mt-2 bg-white p-2 rounded border border-red-100">${Utils.escapeHtml(m.note)}</p>` : ''}
+                        `;
+                        list.appendChild(el);
+                    });
+                }
+            },
+
+            createLesson() { this.router('editor', this.currentClassId, 'new'); },
+            backToClass() { this.router('class', this.currentClassId); },
+            backToLessonDetail() { 
+                if(this.currentLessonId === 'new') this.backToClass();
+                else this.router('lesson-detail', this.currentClassId, this.currentLessonId);
+            },
+
+            // --- Cloud Logic ---
+            cloud: {
+                upload() {
+                    const cls = Store.getClass(app.currentClassId);
+                    const lesson = cls.lessons.find(l => l.id === app.currentLessonId);
+                    
+                    const minified = app.qr.minifyLesson(lesson);
+                    
+                    const btn = event.currentTarget;
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> 保存中...';
+                    btn.disabled = true;
+
+                    fetch(FIXED_API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'save', title: lesson.title, data: JSON.stringify(minified) })
+                    })
+                    .then(res => res.json())
+                    .then(resp => {
+                        if (resp.status === 'success') {
+                            app.toast('クラウドに保存しました', 'success');
+                            Store.addSharedHistory(resp.code, lesson.title); // Save to history
+                            app.qr.generateCloud(resp.code);
+                        } else {
+                            throw new Error(resp.message || 'Unknown error');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        app.toast('アップロードに失敗しました (API設定を確認してください)', 'error');
+                    })
+                    .finally(() => {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    });
+                },
+
+                download(code) {
+                    app.toast('データを取得中...', 'info');
+
+                    fetch(`${FIXED_API_URL}?code=${code}`)
+                    .then(res => res.json())
+                    .then(resp => {
+                        if (resp.status === 'success') {
+                            const minified = JSON.parse(resp.data);
+                            const lesson = app.qr.unminifyLesson(minified);
+                            app.qr.importLesson(lesson, ` (Code: ${code})`);
+                        } else {
+                            app.toast('レッスンが見つかりませんでした', 'error');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        app.toast('ダウンロードに失敗しました', 'error');
+                    });
+                }
+            },
+
+            // --- QR Logic ---
+            qr: {
+                videoStream: null,
+                animationFrame: null,
+                
+                minifyLesson(lesson) {
+                    return {
+                        t: lesson.title,
+                        d: lesson.description || "",
+                        c: {
+                            l: lesson.content.lecture || [],
+                            q: (lesson.content.quizzes || []).map(q => ({
+                                Q: q.question,
+                                O: q.options,
+                                C: q.correct,
+                                E: q.explanation
+                            })),
+                            w: (lesson.content.written || []).map(w => ({
+                                Q: w.question,
+                                M: w.model,
+                                G: w.grading || "",
+                                E: w.explanation
+                            }))
+                        }
+                    };
+                },
+
+                unminifyLesson(min) {
+                    return {
+                        id: Utils.id(),
+                        title: min.t,
+                        description: min.d,
+                        content: {
+                            lecture: min.c.l,
+                            quizzes: (min.c.q || []).map(q => ({
+                                question: q.Q,
+                                options: q.O,
+                                correct: q.C,
+                                explanation: q.E
+                            })),
+                            written: (min.c.w || []).map(w => ({
+                                question: w.Q,
+                                model: w.M,
+                                grading: w.G,
+                                explanation: w.E
+                            }))
+                        }
+                    };
+                },
+
+                // Generate Offline QR (Data embedded)
+                generate() {
+                    const cls = Store.getClass(app.currentClassId);
+                    const l = cls.lessons.find(x => x.id === app.currentLessonId);
+                    const minified = this.minifyLesson(l);
+                    const json = JSON.stringify(minified);
+                    const compressed = LZString.compressToEncodedURIComponent(json);
+                    
+                    this.showQR("APOLLO:" + compressed, "オフライン共有用QR");
+                    Utils.get('qr-code-text-container').classList.add('hidden');
+                },
+
+                // Generate Cloud QR (Reference Code)
+                generateCloud(code) {
+                    this.showQR("APOLLO:REF:" + code, "クラウド共有用QR");
+                    Utils.get('qr-code-text-container').classList.remove('hidden');
+                    Utils.get('qr-code-text').innerText = code;
+                },
+
+                showQR(text, title) {
+                    const qrArea = Utils.get('qr-display-area');
+                    qrArea.innerHTML = '';
+                    Utils.get('qr-title').innerText = title;
+                    
+                    try {
+                        new QRCode(qrArea, {
+                            text: text,
+                            width: 512,
+                            height: 512,
+                            correctLevel: QRCode.CorrectLevel.L
+                        });
+                        app.modal.open('qr-show');
+                    } catch(e) {
+                        console.error(e);
+                        app.toast('QR生成エラー', 'error');
+                    }
+                },
+
+                importLesson(lesson, suffix="") {
+                    let targetClassId = app.currentClassId;
+                    if (!targetClassId) {
+                        let inbox = Store.data.classes.find(c => c.title === "受信したレッスン");
+                        if (!inbox) {
+                            const id = Store.addClass("受信したレッスン", "QRコード等でインポートされたレッスン");
+                            targetClassId = id;
+                        } else {
+                            targetClassId = inbox.id;
+                        }
+                    }
+                    
+                    lesson.id = Utils.id(); 
+                    lesson.title += suffix;
+                    
+                    Store.updateLesson(targetClassId, lesson);
+                    app.toast(`レッスン「${lesson.title}」をインポートしました`, 'success');
+                    
+                    if(app.currentClassId) app.router('class', app.currentClassId);
+                    else app.router('dashboard');
+                },
+
+                startScan() {
+                    app.modal.open('qr-scan');
+                    const video = Utils.get('qr-video');
+                    const msg = Utils.get('qr-overlay-msg');
+                    msg.classList.remove('hidden');
+
+                    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
+                        this.videoStream = stream;
+                        video.srcObject = stream;
+                        video.setAttribute("playsinline", true);
+                        video.play();
+                        msg.classList.add('hidden');
+                        requestAnimationFrame(this.tick.bind(this));
+                    }).catch(e => {
+                        console.error(e);
+                        app.modal.close('qr-scan');
+                        app.toast('カメラの起動に失敗しました', 'error');
+                    });
+                },
+
+                stopScan() {
+                    if (this.videoStream) {
+                        this.videoStream.getTracks().forEach(track => track.stop());
+                        this.videoStream = null;
+                    }
+                    if (this.animationFrame) cancelAnimationFrame(this.animationFrame);
+                    app.modal.close('qr-scan');
+                },
+
+                tick() {
+                    const video = Utils.get('qr-video');
+                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                        const canvas = document.createElement("canvas");
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        const ctx = canvas.getContext("2d");
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                            inversionAttempts: "dontInvert",
+                        });
+
+                        if (code) {
+                            // Offline Data QR
+                            if(code.data.startsWith("APOLLO:")) {
+                                if (code.data.startsWith("APOLLO:REF:")) {
+                                    // Cloud Reference
+                                    const refCode = code.data.substring(11); // Remove "APOLLO:REF:"
+                                    this.stopScan();
+                                    app.cloud.download(refCode);
+                                } else {
+                                    // Compressed Data
+                                    this.handleData(code.data.substring(7)); // Remove "APOLLO:"
+                                    this.stopScan();
+                                }
+                                return;
+                            }
+                        }
+                    }
+                    this.animationFrame = requestAnimationFrame(this.tick.bind(this));
+                },
+
+                handleData(compressed) {
+                    try {
+                        const json = LZString.decompressFromEncodedURIComponent(compressed);
+                        if(!json) throw new Error("Decompression failed");
+                        
+                        const minified = JSON.parse(json);
+                        let lesson;
+                        if (minified.t && minified.c) {
+                            lesson = this.unminifyLesson(minified);
+                        } else {
+                            lesson = minified;
+                            lesson.id = Utils.id(); 
+                        }
+                        
+                        this.importLesson(lesson, " (Imported)");
+                        
+                    } catch(e) {
+                        console.error(e);
+                        app.toast('無効なQRコードデータです', 'error');
+                    }
+                }
+            },
+
+            // --- Editor Logic ---
+            editor: {
+                data: null,
+                init(classId, lessonId) {
+                    this.classId = classId;
+                    this.lessonId = lessonId;
+                    
+                    if (lessonId === 'new') {
+                        this.data = { title: '', description: '', content: { lecture: [''], quizzes: [], written: [] } };
+                    } else {
+                        const l = Store.getClass(classId).lessons.find(x => x.id === lessonId);
+                        this.data = JSON.parse(JSON.stringify(l));
+                        if (!Array.isArray(this.data.content.lecture)) this.data.content.lecture = [this.data.content.lecture];
+                    }
+                    this.render();
+                },
+
+                render() {
+                    Utils.get('edit-title').value = this.data.title;
+                    Utils.get('edit-desc').value = this.data.description || '';
+                    
+                    // Lecture Pages
+                    const lecContainer = Utils.get('editor-lecture-container');
+                    lecContainer.innerHTML = '';
+                    this.data.content.lecture.forEach((page, idx) => {
+                        const div = document.createElement('div');
+                        div.className = 'relative group';
+                        div.innerHTML = `
+                            <div class="flex justify-between text-xs font-bold text-gray-400 mb-2">
+                                <span>Page ${idx + 1}</span>
+                                ${this.data.content.lecture.length > 1 ? `<button onclick="app.editor.removeLecturePage(${idx})" class="text-red-400 hover:text-red-600">削除</button>` : ''}
+                            </div>
+                            <textarea oninput="app.editor.data.content.lecture[${idx}] = this.value" class="w-full bg-gray-50 border-none rounded-xl p-4 focus:ring-2 focus:ring-blue-500 h-32 resize-y text-sm" placeholder="解説内容（HTML使用可）">${page}</textarea>
+                        `;
+                        lecContainer.appendChild(div);
+                    });
+
+                    // Quizzes
+                    const quizContainer = Utils.get('editor-quiz-list');
+                    quizContainer.innerHTML = '';
+                    this.data.content.quizzes.forEach((q, idx) => {
+                        const div = document.createElement('div');
+                        div.className = 'border border-gray-200 rounded-xl p-4 bg-gray-50 space-y-3';
+                        div.innerHTML = `
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs font-bold text-indigo-500">Q${idx+1}</span>
+                                <button onclick="app.editor.removeQuiz(${idx})" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-times"></i></button>
+                            </div>
+                            <input type="text" class="w-full p-2 rounded border border-gray-200 text-sm font-bold mb-2" value="${q.question}" placeholder="問題文" oninput="app.editor.data.content.quizzes[${idx}].question = this.value">
+                            <div class="grid grid-cols-2 gap-2">
+                                ${q.options.map((opt, oid) => `
+                                    <div class="flex items-center gap-2 bg-white p-2 rounded border ${q.correct===oid ? 'border-indigo-500 bg-indigo-50': 'border-gray-200'}">
+                                        <input type="radio" name="eq-${idx}" ${q.correct===oid?'checked':''} onchange="app.editor.setQuizCorrect(${idx}, ${oid})">
+                                        <input type="text" class="w-full text-xs bg-transparent outline-none" value="${opt}" oninput="app.editor.data.content.quizzes[${idx}].options[${oid}] = this.value" placeholder="選択肢">
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <textarea class="w-full p-2 rounded border border-gray-200 text-xs h-16 mt-2" placeholder="解説" oninput="app.editor.data.content.quizzes[${idx}].explanation = this.value">${q.explanation}</textarea>
+                        `;
+                        quizContainer.appendChild(div);
+                    });
+
+                    // Written
+                    const writContainer = Utils.get('editor-written-list');
+                    writContainer.innerHTML = '';
+                    this.data.content.written.forEach((w, idx) => {
+                        const div = document.createElement('div');
+                        div.className = 'border border-gray-200 rounded-xl p-4 bg-gray-50 space-y-3';
+                        div.innerHTML = `
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs font-bold text-emerald-500">Q${idx+1}</span>
+                                <button onclick="app.editor.removeWritten(${idx})" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-times"></i></button>
+                            </div>
+                            <input type="text" class="w-full p-2 rounded border border-gray-200 text-sm font-bold" value="${w.question}" placeholder="問題文" oninput="app.editor.data.content.written[${idx}].question = this.value">
+                            <textarea class="w-full p-2 rounded border border-gray-200 text-xs h-16" placeholder="模範解答" oninput="app.editor.data.content.written[${idx}].model = this.value">${w.model}</textarea>
+                            <textarea class="w-full p-2 rounded border border-gray-200 text-xs h-16" placeholder="採点基準 (Rubric)" oninput="app.editor.data.content.written[${idx}].grading = this.value">${w.grading || ''}</textarea>
+                            <textarea class="w-full p-2 rounded border border-gray-200 text-xs h-16" placeholder="解説" oninput="app.editor.data.content.written[${idx}].explanation = this.value">${w.explanation}</textarea>
+                        `;
+                        writContainer.appendChild(div);
+                    });
+                },
+
+                addLecturePage() { this.data.content.lecture.push(''); this.render(); },
+                removeLecturePage(idx) { this.data.content.lecture.splice(idx, 1); this.render(); },
+                
+                addQuizItem() { this.data.content.quizzes.push({question:'', options:['','','',''], correct:0, explanation:''}); this.render(); },
+                removeQuiz(idx) { this.data.content.quizzes.splice(idx, 1); this.render(); },
+                setQuizCorrect(qIdx, optIdx) { this.data.content.quizzes[qIdx].correct = optIdx; this.render(); },
+                
+                addWrittenItem() { this.data.content.written.push({question:'', model:'', grading:'', explanation:''}); this.render(); },
+                removeWritten(idx) { this.data.content.written.splice(idx, 1); this.render(); },
+
+                processBulkImport() {
+                    const text = Utils.get('bulk-import-text').value;
+                    if (!text.trim()) return;
+
+                    const parsed = {
+                        title: this.data.title,
+                        description: this.data.description,
+                        lecture: [...this.data.content.lecture],
+                        quizzes: [...this.data.content.quizzes],
+                        written: [...this.data.content.written]
+                    };
+
+                    try {
+                        let section = '';
+                        let currentQuiz = null;
+                        let currentWritten = null;
+                        let lastTarget = null; 
+
+                        const lines = text.split('\n');
+                        for (let i = 0; i < lines.length; i++) {
+                            const line = lines[i];
+                            const trimmed = line.trim();
+                            
+                            if (trimmed.startsWith('[TITLE]')) { 
+                                parsed.title = trimmed.replace('[TITLE]', '').trim(); 
+                                section = ''; lastTarget = null; continue; 
+                            }
+                            if (trimmed.startsWith('[DESC]')) { 
+                                parsed.description = trimmed.replace('[DESC]', '').trim(); 
+                                section = 'DESC'; 
+                                lastTarget = { obj: parsed, key: 'description' };
+                                continue; 
+                            }
+                            if (trimmed.startsWith('[LECTURE]')) { 
+                                section = 'LECTURE'; 
+                                parsed.lecture = []; 
+                                lastTarget = null; 
+                                continue; 
+                            }
+                            if (trimmed.startsWith('[QUIZ]')) { 
+                                section = 'QUIZ'; 
+                                parsed.quizzes = []; 
+                                currentQuiz = null; 
+                                lastTarget = null; 
+                                continue; 
+                            }
+                            if (trimmed.startsWith('[WRITTEN]')) { 
+                                section = 'WRITTEN'; 
+                                parsed.written = []; 
+                                currentWritten = null; 
+                                lastTarget = null; 
+                                continue; 
+                            }
+
+                            if (section === 'LECTURE') {
+                                if (trimmed === '---') {
+                                    parsed.lecture.push('');
+                                    lastTarget = null; 
+                                } else {
+                                    if (parsed.lecture.length === 0) parsed.lecture.push('');
+                                    const idx = parsed.lecture.length - 1;
+                                    if (parsed.lecture[idx] !== '') parsed.lecture[idx] += '\n';
+                                    parsed.lecture[idx] += line; 
+                                }
+                            }
+                            else if (section === 'QUIZ') {
+                                if (trimmed.startsWith('Q:')) {
+                                    currentQuiz = { question: trimmed.replace('Q:', '').trim(), options: ['','','',''], correct: 0, explanation: '' };
+                                    parsed.quizzes.push(currentQuiz);
+                                    lastTarget = { obj: currentQuiz, key: 'question' };
+                                } else if (currentQuiz) {
+                                    if (trimmed.match(/^[1-4]:/)) {
+                                        const num = parseInt(trimmed.charAt(0)) - 1;
+                                        currentQuiz.options[num] = trimmed.substring(2).trim();
+                                        lastTarget = { obj: currentQuiz.options, key: num };
+                                    } else if (trimmed.startsWith('C:')) {
+                                        currentQuiz.correct = parseInt(trimmed.replace('C:', '').trim()) - 1;
+                                        lastTarget = null; 
+                                    } else if (trimmed.startsWith('E:')) {
+                                        currentQuiz.explanation = trimmed.replace('E:', '').trim();
+                                        lastTarget = { obj: currentQuiz, key: 'explanation' };
+                                    } else {
+                                        if (lastTarget) {
+                                            if (lastTarget.obj[lastTarget.key] !== '') lastTarget.obj[lastTarget.key] += '\n';
+                                            lastTarget.obj[lastTarget.key] += line.trim(); 
+                                        }
+                                    }
+                                }
+                            }
+                            else if (section === 'WRITTEN') {
+                                if (trimmed.startsWith('Q:')) {
+                                    currentWritten = { question: trimmed.replace('Q:', '').trim(), model: '', grading: '', explanation: '' };
+                                    parsed.written.push(currentWritten);
+                                    lastTarget = { obj: currentWritten, key: 'question' };
+                                } else if (currentWritten) {
+                                    if (trimmed.startsWith('M:')) {
+                                        currentWritten.model = trimmed.replace('M:', '').trim();
+                                        lastTarget = { obj: currentWritten, key: 'model' };
+                                    } else if (trimmed.startsWith('G:')) {
+                                        currentWritten.grading = trimmed.replace('G:', '').trim();
+                                        lastTarget = { obj: currentWritten, key: 'grading' };
+                                    } else if (trimmed.startsWith('E:')) {
+                                        currentWritten.explanation = trimmed.replace('E:', '').trim();
+                                        lastTarget = { obj: currentWritten, key: 'explanation' };
+                                    } else {
+                                        if (lastTarget) {
+                                            if (lastTarget.obj[lastTarget.key] !== '') lastTarget.obj[lastTarget.key] += '\n';
+                                            lastTarget.obj[lastTarget.key] += line.trim(); 
+                                        }
+                                    }
+                                }
+                            }
+                            else if (section === 'DESC' && lastTarget) {
+                                if (lastTarget.obj[lastTarget.key] !== '') lastTarget.obj[lastTarget.key] += '\n';
+                                lastTarget.obj[lastTarget.key] += line.trim();
+                            }
+                        }
+
+                        this.data.title = parsed.title;
+                        this.data.description = parsed.description;
+                        this.data.content.lecture = parsed.lecture.length ? parsed.lecture : [''];
+                        this.data.content.quizzes = parsed.quizzes;
+                        this.data.content.written = parsed.written;
+                        
+                        this.render();
+                        app.modal.close('bulk-import');
+                        app.toast('一括入力を反映しました', 'success');
+
+                    } catch (e) {
+                        console.error(e);
+                        app.toast('フォーマットエラーが発生しました', 'error');
+                    }
+                }
+            },
+
+            saveLesson() {
+                const title = Utils.get('edit-title').value;
+                if (!title) return this.toast('タイトルを入力してください', 'error');
+                
+                const newData = {
+                    ...this.editor.data,
+                    id: this.editor.lessonId === 'new' ? Utils.id() : this.editor.lessonId,
+                    title: title,
+                    description: Utils.get('edit-desc').value
+                };
+                
+                Store.updateLesson(this.editor.classId, newData);
+                this.toast('レッスンを保存しました', 'success');
+                this.backToLessonDetail(); // Go back to lesson detail
+            },
+
+            // --- Player Logic ---
+            player: {
+                lesson: null,
+                phase: 'lecture', 
+                idx: 0, 
+                
+                init(classId, lessonId) {
+                    const cls = Store.getClass(classId);
+                    this.lesson = cls.lessons.find(l => l.id === lessonId);
+                    this.classId = classId;
+                    this.lessonId = lessonId;
+                    this.phase = 'lecture';
+                    this.idx = 0;
+                    
+                    Utils.get('player-lesson-title').innerText = this.lesson.title;
+                    this.render();
+                },
+
+                render() {
+                    const left = Utils.get('pane-left');
+                    const right = Utils.get('pane-right');
+                    const mobileOverlay = Utils.get('mobile-feedback-content');
+                    
+                    right.innerHTML = '';
+                    mobileOverlay.innerHTML = '';
+                    this.updateStepper();
+
+                    if (this.phase === 'lecture') this.renderLecture(left, right);
+                    else if (this.phase === 'quiz') this.renderQuiz(left, right);
+                    else if (this.phase === 'written') this.renderWritten(left, right);
+                    else this.renderComplete(left);
+                },
+                
+                updateStepper() {
+                    const states = { 'lecture': 1, 'quiz': 2, 'written': 3, 'complete': 4 };
+                    const current = states[this.phase];
+                    
+                    [1,2,3].forEach(i => {
+                        const el = Utils.get(`step-ind-${i}`);
+                        if (current === i) el.className = 'px-3 py-1 rounded-md text-xs font-bold bg-white shadow-sm text-gray-800';
+                        else if (current > i) el.className = 'px-3 py-1 rounded-md text-xs font-bold text-emerald-500 bg-emerald-50';
+                        else el.className = 'px-3 py-1 rounded-md text-xs font-bold text-gray-300';
+                    });
+                },
+
+                // 1. Lecture
+                renderLecture(left, right) {
+                    const pages = this.lesson.content.lecture;
+                    const isLast = this.idx === pages.length - 1;
+
+                    left.innerHTML = `
+                        <div class="max-w-2xl mx-auto animate-fade-in">
+                            <div class="flex items-center gap-3 mb-6 text-blue-600">
+                                <span class="bg-blue-100 p-2 rounded-lg"><i class="fa-solid fa-book-open"></i></span>
+                                <span class="font-bold uppercase tracking-wider text-xs">Lecture ${this.idx + 1} / ${pages.length}</span>
+                            </div>
+                            <div class="prose prose-lg text-gray-700 leading-relaxed mb-10">
+                                ${Utils.escapeHtml(pages[this.idx])}
+                            </div>
+                        </div>
+                    `;
+
+                    const navHtml = `
+                        <div class="h-full flex flex-col justify-center items-center text-center space-y-6 animate-slide-in-right">
+                            <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center text-blue-500 text-2xl mb-2">
+                                <i class="fa-solid fa-arrow-right-long"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-800 text-lg mb-1">次のステップへ</h3>
+                                <p class="text-sm text-gray-400">内容を理解したら進みましょう</p>
+                            </div>
+                            <div class="flex gap-3 w-full max-w-xs">
+                                <button ${this.idx === 0 ? 'disabled' : ''} onclick="app.player.prevLecture()" class="flex-1 py-3 rounded-xl font-bold border border-gray-200 text-gray-500 hover:bg-white disabled:opacity-30 disabled:hover:bg-transparent">前へ</button>
+                                <button onclick="app.player.nextLecture()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all">${isLast ? '演習へ進む' : '次へ'}</button>
+                            </div>
+                        </div>
+                    `;
+                    right.innerHTML = navHtml;
+                    
+                    const mobileNav = document.createElement('div');
+                    mobileNav.className = 'lg:hidden mt-8 pt-8 border-t border-gray-100 flex gap-3';
+                    mobileNav.innerHTML = `
+                        <button ${this.idx === 0 ? 'disabled' : ''} onclick="app.player.prevLecture()" class="flex-1 py-3 rounded-xl font-bold bg-gray-100 text-gray-600 disabled:opacity-50">前へ</button>
+                        <button onclick="app.player.nextLecture()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold">${isLast ? '演習へ' : '次へ'}</button>
+                    `;
+                    left.querySelector('.max-w-2xl').appendChild(mobileNav);
+                },
+
+                prevLecture() { if (this.idx > 0) { this.idx--; this.render(); } },
+                nextLecture() {
+                    if (this.idx < this.lesson.content.lecture.length - 1) { this.idx++; this.render(); }
+                    else {
+                        if (this.lesson.content.quizzes.length) { this.phase = 'quiz'; this.idx = 0; }
+                        else if (this.lesson.content.written.length) { this.phase = 'written'; this.idx = 0; }
+                        else this.phase = 'complete';
+                        this.render();
+                    }
+                },
+
+                // 2. Quiz
+                renderQuiz(left, right) {
+                    const q = this.lesson.content.quizzes[this.idx];
+                    
+                    left.innerHTML = `
+                        <div class="max-w-2xl mx-auto animate-fade-in">
+                            <div class="flex items-center gap-3 mb-6 text-indigo-600">
+                                <span class="bg-indigo-100 p-2 rounded-lg"><i class="fa-solid fa-list-check"></i></span>
+                                <span class="font-bold uppercase tracking-wider text-xs">Quiz ${this.idx + 1} / ${this.lesson.content.quizzes.length}</span>
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-800 mb-8 leading-snug">${Utils.escapeHtml(q.question)}</h2>
+                            <div class="grid gap-3" id="quiz-opts">
+                                ${q.options.map((opt, i) => `
+                                    <button onclick="app.player.answerQuiz(${i})" class="w-full text-left p-4 rounded-xl border-2 border-gray-100 hover:border-indigo-500 hover:bg-indigo-50 transition-all font-medium flex items-center gap-4 group">
+                                        <span class="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 group-hover:bg-indigo-500 group-hover:text-white flex items-center justify-center text-sm font-bold transition-colors">${i+1}</span>
+                                        <span>${Utils.escapeHtml(opt)}</span>
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+
+                    right.innerHTML = `
+                        <div class="h-full flex items-center justify-center text-gray-300">
+                            <div class="text-center">
+                                <i class="fa-solid fa-lightbulb text-4xl mb-2"></i>
+                                <p class="text-sm">回答を選択すると<br>解説が表示されます</p>
+                            </div>
+                        </div>
+                    `;
+                },
+
+                answerQuiz(selected) {
+                    const q = this.lesson.content.quizzes[this.idx];
+                    const isCorrect = selected === q.correct;
+                    
+                    // Register Mistake
+                    if (!isCorrect) {
+                        Store.addMistake(this.classId, this.lessonId, 'quiz', q.question, q.options[selected]);
+                    }
+
+                    const feedbackContent = `
+                        <div class="animate-slide-in-right h-full flex flex-col">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-12 h-12 rounded-full ${isCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500'} flex items-center justify-center text-2xl">
+                                    <i class="fa-solid ${isCorrect ? 'fa-check' : 'fa-xmark'}"></i>
+                                </div>
+                                <span class="text-xl font-bold ${isCorrect ? 'text-green-700' : 'text-red-600'}">${isCorrect ? '正解！' : '不正解...'}</span>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-6 flex-1 overflow-y-auto">
+                                <h4 class="text-xs font-bold text-gray-400 uppercase mb-2">解説</h4>
+                                <p class="text-gray-700 leading-relaxed">${Utils.escapeHtml(q.explanation)}</p>
+                            </div>
+                            
+                            <button onclick="app.player.nextQuizItem()" class="w-full bg-gray-900 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-black transition-all">
+                                次へ進む <i class="fa-solid fa-arrow-right ml-2"></i>
+                            </button>
+                        </div>
+                    `;
+
+                    const btns = Utils.get('quiz-opts').querySelectorAll('button');
+                    btns.forEach((b, i) => {
+                        b.disabled = true;
+                        if (i === q.correct) b.className = 'w-full text-left p-4 rounded-xl border-2 border-green-500 bg-green-50 text-green-800 font-bold flex items-center gap-4';
+                        else if (i === selected && !isCorrect) b.className = 'w-full text-left p-4 rounded-xl border-2 border-red-500 bg-red-50 text-red-800 font-bold flex items-center gap-4';
+                        else b.className = 'w-full text-left p-4 rounded-xl border border-gray-100 opacity-50 flex items-center gap-4';
+                    });
+
+                    if(window.innerWidth >= 1024) {
+                         Utils.get('pane-right').innerHTML = feedbackContent;
+                    } else {
+                        Utils.get('mobile-feedback-content').innerHTML = feedbackContent;
+                        this.toggleMobileFeedback(true);
+                    }
+                },
+
+                nextQuizItem() {
+                    this.toggleMobileFeedback(false);
+                    if (this.idx < this.lesson.content.quizzes.length - 1) { this.idx++; this.render(); }
+                    else {
+                        if (this.lesson.content.written.length) { this.phase = 'written'; this.idx = 0; }
+                        else this.phase = 'complete';
+                        this.render();
+                    }
+                },
+
+                // 3. Written
+                renderWritten(left, right) {
+                    const w = this.lesson.content.written[this.idx];
+                    
+                    left.innerHTML = `
+                        <div class="max-w-2xl mx-auto animate-fade-in flex flex-col h-full">
+                            <div class="flex items-center gap-3 mb-6 text-emerald-600">
+                                <span class="bg-emerald-100 p-2 rounded-lg"><i class="fa-solid fa-pen-nib"></i></span>
+                                <span class="font-bold uppercase tracking-wider text-xs">Written ${this.idx + 1} / ${this.lesson.content.written.length}</span>
+                            </div>
+                            <h2 class="text-xl font-bold text-gray-800 mb-6">${Utils.escapeHtml(w.question)}</h2>
+                            <textarea id="player-written-input" class="w-full flex-1 bg-gray-50 border border-gray-200 rounded-xl p-5 focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none transition-all text-lg" placeholder="ここに回答を入力してください..."></textarea>
+                            
+                            <div class="mt-6">
+                                <button onclick="app.player.checkWritten()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-500/20 transition-all">
+                                    解答を確認する
+                                </button>
+                            </div>
+                        </div>
+                    `;
+
+                     right.innerHTML = `
+                        <div class="h-full flex items-center justify-center text-gray-300">
+                            <div class="text-center">
+                                <i class="fa-solid fa-pen-to-square text-4xl mb-2"></i>
+                                <p class="text-sm">回答を入力して<br>確認ボタンを押してください</p>
+                            </div>
+                        </div>
+                    `;
+                },
+
+                checkWritten() {
+                    const w = this.lesson.content.written[this.idx];
+                    const userAns = Utils.get('player-written-input').value;
+                    Utils.get('player-written-input').disabled = true;
+
+                    const feedbackContent = `
+                        <div class="animate-slide-in-right h-full flex flex-col">
+                            <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <i class="fa-solid fa-check-double text-emerald-500"></i> 模範解答と解説
+                            </h3>
+                            
+                            <div class="flex-1 overflow-y-auto space-y-6 mb-6 custom-scroll">
+                                <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                                    <span class="text-xs font-bold text-emerald-600 uppercase mb-1 block">Model Answer</span>
+                                    <p class="font-bold text-gray-800">${Utils.escapeHtml(w.model)}</p>
+                                </div>
+                                ${w.grading ? `
+                                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                    <span class="text-xs font-bold text-blue-600 uppercase mb-1 block">Grading Criteria</span>
+                                    <p class="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">${Utils.escapeHtml(w.grading)}</p>
+                                </div>` : ''}
+                                <div>
+                                    <span class="text-xs font-bold text-gray-400 uppercase mb-1 block">Explanation</span>
+                                    <p class="text-gray-600 text-sm leading-relaxed">${Utils.escapeHtml(w.explanation)}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white border-t border-gray-100 pt-6">
+                                <p class="text-center text-sm font-bold text-gray-500 mb-4">自己採点してください</p>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <button onclick="app.player.gradeWritten(false)" class="py-3 rounded-xl border border-red-200 bg-red-50 text-red-600 font-bold hover:bg-red-100 transition-colors">
+                                        <i class="fa-solid fa-times mr-1"></i> 不正解
+                                    </button>
+                                    <button onclick="app.player.gradeWritten(true)" class="py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 transition-colors">
+                                        <i class="fa-solid fa-check mr-1"></i> 正解
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    if(window.innerWidth >= 1024) {
+                         Utils.get('pane-right').innerHTML = feedbackContent;
+                    } else {
+                        Utils.get('mobile-feedback-content').innerHTML = feedbackContent;
+                        this.toggleMobileFeedback(true);
+                    }
+                },
+
+                gradeWritten(isCorrect) {
+                    if (!isCorrect) {
+                         const w = this.lesson.content.written[this.idx];
+                         Store.addMistake(this.classId, this.lessonId, 'written', w.question, '', '自己採点で不正解');
+                    }
+                    this.toggleMobileFeedback(false);
+                    if (this.idx < this.lesson.content.written.length - 1) { this.idx++; this.render(); }
+                    else { this.phase = 'complete'; this.render(); }
+                },
+
+                toggleMobileFeedback(show) {
+                    const el = Utils.get('mobile-feedback-overlay');
+                    if(show) el.classList.remove('translate-y-full');
+                    else el.classList.add('translate-y-full');
+                },
+
+                renderComplete(left) {
+                    Utils.get('pane-right').classList.add('hidden');
+                    Utils.get('pane-left').classList.remove('lg:grid-cols-2');
+                    // Changed: min-h-full ensures background covers entire scrollable area if content is tall
+                    Utils.get('pane-left').className = 'col-span-2 min-h-full flex flex-col items-center justify-center bg-[url("https://www.transparenttextures.com/patterns/cubes.png")] bg-repeat';
+
+                    left.innerHTML = `
+                        <div class="bg-white p-10 rounded-3xl shadow-xl text-center max-w-md w-full animate-fade-in border border-gray-100 my-10">
+                            <div class="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center text-5xl text-yellow-500 mx-auto mb-6 shadow-glow">
+                                <i class="fa-solid fa-trophy"></i>
+                            </div>
+                            <h2 class="text-3xl font-bold text-gray-800 mb-2">Congratulations!</h2>
+                            <p class="text-gray-500 mb-8">レッスンの学習が完了しました。</p>
+                            
+                            <button onclick="app.backToLessonDetail()" class="w-full bg-gray-900 text-white py-4 rounded-xl font-bold hover:bg-black transition-all shadow-lg">
+                                レッスン詳細に戻る
+                            </button>
+                        </div>
+                    `;
+                }
+            },
+            exportData() { Utils.downloadJSON(Store.data, `apollo_backup_${new Date().toISOString().slice(0,10)}.json`); },
+            exportClass(id) { 
+                if(!id) id = this.currentClassId;
+                const c = Store.getClass(id);
+                Utils.downloadJSON({ classes: [c] }, `apollo_class_${c.title}.json`); 
+            },
+            exportLesson(classId, lessonId) {
+                const c = Store.getClass(classId);
+                const l = c.lessons.find(x => x.id === lessonId);
+                Utils.downloadJSON(l, `apollo_lesson_${l.title}.json`);
+            },
+            importData(input) {
+                const file = input.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const json = JSON.parse(e.target.result);
+                        if (json.classes) {
+                            json.classes.forEach(c => {
+                                const existing = Store.getClass(c.id);
+                                if(existing) { Store.deleteClass(c.id); }
+                                Store.data.classes.push(c);
+                            });
+                            Store.save();
+                            this.router('dashboard');
+                            this.toast('データをインポートしました', 'success');
+                        } else if (json.title && json.content) {
+                             if (this.currentClassId) {
+                                 Store.updateLesson(this.currentClassId, json);
+                                 this.toast('レッスンをインポートしました', 'success');
+                                 this.renderClassView();
+                             } else {
+                                 this.toast('レッスンを追加するクラスを開いてください', 'error');
+                             }
+                        }
+                    } catch (err) { this.toast('ファイル形式が正しくありません', 'error'); console.error(err); }
+                };
+                reader.readAsText(file);
+                input.value = '';
+            },
+            
+            addClass() {
+                const t = Utils.get('new-class-title').value;
+                const d = Utils.get('new-class-desc').value;
+                if(!t) return;
+                Store.addClass(t, d);
+                this.modal.close('create-class');
+                this.renderDashboard();
+                this.toast('クラスを作成しました', 'success');
+                Utils.get('new-class-title').value = ''; Utils.get('new-class-desc').value = '';
+            },
+            deleteClass() {
+                if(confirm('このクラスを削除しますか？')) {
+                    Store.deleteClass(this.currentClassId);
+                    this.router('dashboard');
+                    this.toast('クラスを削除しました');
+                }
+            },
+            deleteLesson(id) {
+                if(confirm('レッスンを削除しますか？')) {
+                    Store.deleteLesson(this.currentClassId, id);
+                    this.renderClassView();
+                    this.toast('レッスンを削除しました');
+                }
+            },
+            modal: {
+                open(id) {
+                    const m = Utils.get(`modal-${id}`);
+                    m.classList.remove('hidden');
+                    setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('scale-95'); }, 10);
+                },
+                close(id) {
+                    const m = Utils.get(`modal-${id}`);
+                    m.classList.add('opacity-0'); m.children[0].classList.add('scale-95');
+                    setTimeout(() => m.classList.add('hidden'), 300);
+                }
+            }
+        };
+
+        const app = App;
+        window.onload = () => app.init();
+    </script>
+</body>
+</html>
