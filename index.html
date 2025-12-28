@@ -18,8 +18,8 @@
                 extend: {
                     fontFamily: { sans: ['Zen Kaku Gothic New', 'sans-serif'], serif: ['Cinzel', 'serif'] },
                     colors: { 
-                        primary: { 400: '#22D3EE', 500: '#06B6D4', 600: '#0891B2' }, // Cyan
-                        secondary: '#3B82F6', // Blue
+                        primary: { 400: '#22D3EE', 500: '#06B6D4', 600: '#0891B2' }, 
+                        secondary: '#3B82F6', 
                         ethereal: '#6366f1' 
                     },
                     backgroundImage: { 'noise': "url('https://www.transparenttextures.com/patterns/stardust.png')" }
@@ -117,7 +117,6 @@
             <!-- Background Glow -->
             <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-primary-600/10 rounded-full blur-[100px] pointer-events-none"></div>
             <div class="absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary/10 rounded-full blur-[100px] pointer-events-none"></div>
-            
             <div id="content-container" class="h-full overflow-y-auto p-4 md:p-10 space-y-10 scroll-smooth pb-32 relative z-10"></div>
         </main>
         
@@ -301,7 +300,8 @@
                 document.getElementById('detail-id').textContent = t.id;
                 
                 if(t.seat_config && t.seat_config.imageUrl) {
-                    document.getElementById('ticket-bg-image').style.backgroundImage = `url('${t.seat_config.imageUrl}')`;
+                    const bgEl = document.getElementById('ticket-img-bg');
+                    if(bgEl) bgEl.style.backgroundImage = `url('${t.seat_config.imageUrl}')`;
                 }
 
                 const st = document.getElementById('detail-status');
@@ -309,7 +309,7 @@
                 st.className = t.status === 'used' ? "bg-slate-300 p-4 text-center text-xs font-bold text-slate-500 border-t border-slate-400 tracking-[0.3em]" : "bg-primary-400 p-4 text-center text-xs font-bold text-black border-t border-primary-500 tracking-[0.3em] shadow-lg";
                 
                 const qc = document.getElementById('qrcode-display');
-                if(qc) { qc.innerHTML = ''; try { new QRCode(qc, { text: JSON.stringify({ id: t.id }), width: 150, height: 150, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H }); } catch(e){} }
+                if(qc) { qc.innerHTML = ''; setTimeout(() => { try { new QRCode(qc, { text: JSON.stringify({ id: t.id }), width: 150, height: 150, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H }); } catch(e){} }, 100); }
             }
         };
 
