@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Covenant - 生活誓約管理</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="icon" href="icons/Life Covenant.png">
+    <link rel="apple-touch-icon" href="icons/Life Covenant.png">
+    <link rel="manifest" href="/manifest/life-covenant.json">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Inter"', '"Noto Sans JP"', 'sans-serif'],
+                    },
+                    colors: {
+                        background: '#0f172a',
+                        surface: '#1e293b',
+                        primary: '#10b981', // Emerald for Success
+                        danger: '#f43f5e',  // Rose for Failure/Sin
+                        gold: '#fbbf24',    // Amber for Glory
+                        accent: '#6366f1',  // Indigo
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'slide-in': 'slideIn 0.3s ease-out forwards',
+                    },
+                    keyframes: {
+                        slideIn: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #050505;
+            color: #e2e8f0;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(244, 63, 94, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        /* Glassmorphism Utilities */
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.07);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        /* Range Slider Styling - Fixed Visibility */
+        input[type=range] {
+            -webkit-appearance: none; 
+            background: transparent; 
+        }
+        
+        /* Thumb Styling for WebKit/Blink (Chrome, Safari, Edge) */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #6366f1; /* accent color */
+            cursor: pointer;
+            margin-top: -6px; /* Adjust to center on track */
+            box-shadow: 0 0 0 2px rgba(15, 23, 42, 1); /* Border effect */
+        }
+        
+        /* Track Styling for WebKit */
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #374151;
+            border-radius: 2px;
+        }
+
+        /* Thumb Styling for Firefox */
+        input[type=range]::-moz-range-thumb {
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #6366f1;
+            cursor: pointer;
+            border: 2px solid #0f172a;
+        }
+        
+        /* Track Styling for Firefox */
+        input[type=range]::-moz-range-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #374151;
+            border-radius: 2px;
+        }
+
+        input[type=range]:focus {
+            outline: none; 
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen pb-24 md:pb-0 md:pl-24">
+
+    <!-- Desktop Sidebar / Mobile Bottom Nav -->
+    <nav class="fixed z-50 md:left-0 md:top-0 md:h-full md:w-24 md:flex-col bottom-0 w-full h-20 glass border-t md:border-t-0 md:border-r border-white/10 flex justify-around md:justify-center items-center md:gap-8 shadow-2xl">
+        <button onclick="app.switchTab('home')" class="nav-btn group flex flex-col items-center gap-1 p-2 text-gray-400 hover:text-white transition-colors" data-tab="home">
+            <i class="ph ph-house text-2xl mb-1 group-hover:text-accent transition-colors"></i>
+            <span class="text-[10px] uppercase tracking-wider font-bold">Home</span>
+        </button>
+        <button onclick="app.switchTab('calendar')" class="nav-btn group flex flex-col items-center gap-1 p-2 text-gray-400 hover:text-white transition-colors" data-tab="calendar">
+            <i class="ph ph-calendar text-2xl mb-1 group-hover:text-primary transition-colors"></i>
+            <span class="text-[10px] uppercase tracking-wider font-bold">History</span>
+        </button>
+        <button onclick="app.switchTab('rewards')" class="nav-btn group flex flex-col items-center gap-1 p-2 text-gray-400 hover:text-white transition-colors" data-tab="rewards">
+            <i class="ph ph-gift text-2xl mb-1 group-hover:text-gold transition-colors"></i>
+            <span class="text-[10px] uppercase tracking-wider font-bold">Reward</span>
+        </button>
+        <button onclick="app.switchTab('punishments')" class="nav-btn group flex flex-col items-center gap-1 p-2 text-gray-400 hover:text-white transition-colors" data-tab="punishments">
+            <i class="ph ph-gavel text-2xl mb-1 group-hover:text-danger transition-colors"></i>
+            <span class="text-[10px] uppercase tracking-wider font-bold">Sin</span>
+        </button>
+        <button onclick="app.openModal('settingsModal')" class="nav-btn group flex flex-col items-center gap-1 p-2 text-gray-400 hover:text-white transition-colors">
+            <i class="ph ph-gear text-2xl mb-1 group-hover:text-white transition-colors"></i>
+            <span class="text-[10px] uppercase tracking-wider font-bold">Settings</span>
+        </button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="p-6 max-w-5xl mx-auto space-y-8">
+        
+        <!-- Header & Stats -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 animate-slide-in">
+            <div>
+                <h1 class="text-4xl font-extrabold tracking-tighter text-white mb-1">LIFE <span class="text-accent">COVENANT</span></h1>
+                <p class="text-gray-400 text-sm">Design your fate through discipline.</p>
+            </div>
+            
+            <div class="flex gap-4 w-full md:w-auto">
+                <!-- Glory Points -->
+                <div class="glass-card flex-1 md:w-40 p-3 rounded-xl flex items-center gap-3 border-l-4 border-gold">
+                    <div class="bg-gold/10 p-2 rounded-lg text-gold">
+                        <i class="ph-fill ph-crown text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Glory</div>
+                        <div class="text-2xl font-bold text-white font-mono tracking-tight" id="gloryDisplay">0</div>
+                    </div>
+                </div>
+
+                <!-- Sin Points -->
+                <div class="glass-card flex-1 md:w-40 p-3 rounded-xl flex items-center gap-3 border-l-4 border-danger">
+                    <div class="bg-danger/10 p-2 rounded-lg text-danger">
+                        <i class="ph-fill ph-skull text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Sin</div>
+                        <div class="text-2xl font-bold text-white font-mono tracking-tight" id="sinDisplay">0</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Views Container -->
+        <div id="viewsContainer" class="min-h-[60vh]">
+            
+            <!-- HOME VIEW: Oaths List -->
+            <section id="homeView" class="space-y-6 animate-slide-in">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold flex items-center gap-2">
+                        <i class="ph-fill ph-scroll text-accent"></i> 本日の誓約
+                    </h2>
+                    <button onclick="app.openModal('addOathModal')" class="bg-accent hover:bg-accent/80 text-white px-4 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-accent/20">
+                        <i class="ph-bold ph-plus"></i> 新規誓約
+                    </button>
+                </div>
+
+                <!-- Oaths List -->
+                <div id="oathList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Javascript will populate this -->
+                </div>
+            </section>
+
+            <!-- CALENDAR VIEW -->
+            <section id="calendarView" class="hidden space-y-6 animate-slide-in">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold flex items-center gap-2">
+                        <i class="ph-fill ph-calendar text-primary"></i> 遵守の記録
+                    </h2>
+                    <div class="flex gap-2">
+                        <button onclick="app.changeMonth(-1)" class="p-2 hover:bg-white/10 rounded-lg"><i class="ph-bold ph-caret-left"></i></button>
+                        <span id="currentMonthLabel" class="font-mono text-lg font-bold pt-1"></span>
+                        <button onclick="app.changeMonth(1)" class="p-2 hover:bg-white/10 rounded-lg"><i class="ph-bold ph-caret-right"></i></button>
+                    </div>
+                </div>
+
+                <div class="glass p-6 rounded-2xl">
+                    <div class="grid grid-cols-7 gap-2 mb-4 text-center text-xs font-bold text-gray-500 uppercase">
+                        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                    </div>
+                    <div id="calendarGrid" class="grid grid-cols-7 gap-2">
+                        <!-- JS Generated -->
+                    </div>
+                    <div class="mt-6 flex gap-4 text-xs text-gray-400 justify-end">
+                        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-primary shadow shadow-primary/50"></div> Perfect</div>
+                        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-gold/50"></div> Partial</div>
+                        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-danger shadow shadow-danger/50"></div> Failed</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- REWARDS VIEW -->
+            <section id="rewardsView" class="hidden space-y-6 animate-slide-in">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold flex items-center gap-2 text-gold">
+                        <i class="ph-fill ph-treasure-chest"></i> 報酬交換所
+                    </h2>
+                    <button onclick="app.openModal('addItemModal', 'reward')" class="bg-gold/20 hover:bg-gold/30 text-gold border border-gold/50 px-4 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2">
+                        <i class="ph-bold ph-plus"></i> 追加
+                    </button>
+                </div>
+                <div class="p-4 bg-gold/5 border border-gold/20 rounded-xl text-sm text-gold/80 mb-4">
+                    <i class="ph-fill ph-info mr-1"></i> <span id="gloryBalanceText">0</span> Glory ポイントを消費して報酬を獲得します。
+                </div>
+                <div id="rewardsList" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <!-- JS Generated -->
+                </div>
+            </section>
+
+            <!-- PUNISHMENTS VIEW -->
+            <section id="punishmentsView" class="hidden space-y-6 animate-slide-in">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold flex items-center gap-2 text-danger">
+                        <i class="ph-fill ph-gavel"></i> 贖罪の間
+                    </h2>
+                    <button onclick="app.openModal('addItemModal', 'punishment')" class="bg-danger/20 hover:bg-danger/30 text-danger border border-danger/50 px-4 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2">
+                        <i class="ph-bold ph-plus"></i> 追加
+                    </button>
+                </div>
+                <div class="p-4 bg-danger/5 border border-danger/20 rounded-xl text-sm text-danger/80 mb-4">
+                    <i class="ph-fill ph-warning mr-1"></i> 蓄積した <span id="sinBalanceText">0</span> Sin ポイントは、罰則を執行することで浄化されます。
+                </div>
+                <div id="punishmentsList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- JS Generated -->
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    
+    <!-- Add Oath Modal -->
+    <div id="addOathModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="app.closeModal('addOathModal')"></div>
+        <div class="relative w-full max-w-md p-6 glass rounded-2xl border border-white/10 shadow-2xl animate-slide-in">
+            <h3 class="text-xl font-bold mb-4">新規誓約の作成</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs uppercase text-gray-400 font-bold mb-2">誓約内容</label>
+                    <input type="text" id="newOathTitle" placeholder="例: 毎日30分読書する" class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-accent transition-colors">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs uppercase text-gray-400 font-bold mb-2">開始日</label>
+                        <input type="date" id="newOathStart" class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-accent transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase text-gray-400 font-bold mb-2">終了日</label>
+                        <input type="date" id="newOathEnd" class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-accent transition-colors">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs uppercase text-gray-400 font-bold mb-2">重要度 (Lv. <span id="importanceVal">5</span>)</label>
+                    <input type="range" id="newOathImportance" min="1" max="10" value="5" class="w-full h-2 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('importanceVal').innerText = this.value">
+                    <div class="flex justify-between text-[10px] text-gray-500 mt-1 font-mono">
+                        <span>Lv.1 (Easy)</span>
+                        <span>Lv.10 (Hell)</span>
+                    </div>
+                </div>
+                <button onclick="app.addOath()" class="w-full bg-accent hover:bg-accent/80 py-3 rounded-lg font-bold text-white shadow-lg shadow-accent/20 transition-all">契約締結</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Item Modal (Reward/Punishment) -->
+    <div id="addItemModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="app.closeModal('addItemModal')"></div>
+        <div class="relative w-full max-w-md p-6 glass rounded-2xl border border-white/10 shadow-2xl">
+            <h3 class="text-xl font-bold mb-4" id="itemModalTitle">アイテム追加</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs uppercase text-gray-400 font-bold mb-2">名称</label>
+                    <input type="text" id="newItemName" class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-accent">
+                </div>
+                <div>
+                    <label class="block text-xs uppercase text-gray-400 font-bold mb-2">コスト (Points)</label>
+                    <input type="number" id="newItemCost" class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-accent">
+                </div>
+                <!-- Hidden Type Input -->
+                <input type="hidden" id="newItemType">
+                <button onclick="app.addItem()" class="w-full bg-white text-black hover:bg-gray-200 py-3 rounded-lg font-bold shadow-lg transition-all">追加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="app.closeModal('settingsModal')"></div>
+        <div class="relative w-full max-w-md p-6 glass rounded-2xl border border-white/10 shadow-2xl">
+            <h3 class="text-xl font-bold mb-4">Settings</h3>
+            <div class="space-y-4">
+                <!-- Auto Punishment Setting -->
+                <div class="p-4 bg-danger/5 border border-danger/20 rounded-lg">
+                    <h4 class="font-bold text-danger mb-2 text-sm uppercase tracking-wider">執行ライン (Sin Limit)</h4>
+                    <p class="text-[10px] text-gray-400 mb-2">Sinがこの値を超えると、罰則が強制執行されます。</p>
+                    <input type="number" id="settingSinLimit" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-white focus:outline-none focus:border-danger" onchange="app.updateSinLimit(this.value)">
+                </div>
+
+                <!-- Data Management Section -->
+                <div class="p-4 bg-white/5 border border-white/10 rounded-lg">
+                    <h4 class="font-bold text-gray-300 mb-3 text-sm uppercase tracking-wider">Data Management</h4>
+                    <div class="flex gap-2">
+                        <button onclick="app.exportData()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded text-xs font-bold transition-colors flex items-center justify-center gap-2 border border-white/10">
+                            <i class="ph-bold ph-download-simple"></i> バックアップ
+                        </button>
+                        <button onclick="app.triggerImport()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded text-xs font-bold transition-colors flex items-center justify-center gap-2 border border-white/10">
+                            <i class="ph-bold ph-upload-simple"></i> 復元 (Import)
+                        </button>
+                        <input type="file" id="importFile" class="hidden" accept=".json" onchange="app.handleImport(event)">
+                    </div>
+                    <p class="text-[10px] text-gray-500 mt-2">※ 復元を行うと現在のデータは上書きされます。</p>
+                </div>
+
+                <div class="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                    <h4 class="font-bold text-red-400 mb-2 text-sm uppercase tracking-wider">Danger Zone</h4>
+                    <button onclick="app.resetData()" class="text-xs bg-red-500/20 hover:bg-red-500/40 text-red-400 px-3 py-2 rounded border border-red-500/50 w-full transition-colors font-bold">
+                        すべてのデータをリセット
+                    </button>
+                </div>
+            </div>
+            <button onclick="app.closeModal('settingsModal')" class="mt-4 w-full py-2 text-gray-400 hover:text-white transition-colors">閉じる</button>
+        </div>
+    </div>
+
+    <script>
+        const app = {
+            data: {
+                oaths: [],
+                logs: {}, 
+                points: { glory: 0, sin: 0 },
+                sinLimit: 100, // Default limit
+                rewards: [
+                    { id: 1, name: '新作ゲーム購入', cost: 500 },
+                    { id: 2, name: 'カフェで贅沢', cost: 100 },
+                    { id: 3, name: '深夜の夜食', cost: 50 }
+                ],
+                punishments: [
+                    { id: 1, name: 'スマホ封印 (1日)', cost: 100 },
+                    { id: 2, name: '筋トレ (腕立て50回)', cost: 50 },
+                    { id: 3, name: '募金 (500円)', cost: 200 }
+                ],
+                currentDate: new Date()
+            },
+
+            init() {
+                this.loadData();
+                this.render();
+                this.startClock();
+                
+                // Set default dates for modal
+                const today = new Date().toISOString().split('T')[0];
+                const nextMonth = new Date();
+                nextMonth.setDate(nextMonth.getDate() + 30);
+                document.getElementById('newOathStart').value = today;
+                document.getElementById('newOathEnd').value = nextMonth.toISOString().split('T')[0];
+
+                // Set initial settings value
+                if (document.getElementById('settingSinLimit')) {
+                    document.getElementById('settingSinLimit').value = this.data.sinLimit || 100;
+                }
+            },
+
+            loadData() {
+                const stored = localStorage.getItem('lifeCovenantData');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    this.data = { ...this.data, ...parsed };
+                    if (!this.data.sinLimit) this.data.sinLimit = 100; // Backwards compatibility
+                    if(Array.isArray(this.data.logs)) this.data.logs = {}; 
+                }
+            },
+
+            updateSinLimit(val) {
+                const limit = parseInt(val);
+                if (limit > 0) {
+                    this.data.sinLimit = limit;
+                    this.saveData();
+                }
+            },
+
+            saveData() {
+                localStorage.setItem('lifeCovenantData', JSON.stringify(this.data));
+                this.renderStats(); // Update header stats immediately
+            },
+
+            resetData() {
+                if(confirm('本当に全てのデータを初期化しますか？この操作は取り消せません。')) {
+                    localStorage.removeItem('lifeCovenantData');
+                    location.reload();
+                }
+            },
+
+            // --- Data Import/Export Logic ---
+            exportData() {
+                const dataStr = JSON.stringify(this.data, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `life-covenant-backup-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            },
+
+            triggerImport() {
+                document.getElementById('importFile').click();
+            },
+
+            handleImport(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        
+                        // Basic validation check
+                        if (!importedData.oaths || !importedData.points) {
+                            throw new Error('無効なデータ形式です。Life Covenantのバックアップファイルを選択してください。');
+                        }
+
+                        if (confirm('現在のデータを上書きして復元しますか？\nこの操作は取り消せません。')) {
+                            this.data = importedData;
+                            this.saveData();
+                            alert('データの復元が完了しました。');
+                            location.reload();
+                        }
+                    } catch (err) {
+                        alert('インポートに失敗しました: ' + err.message);
+                    }
+                    // Reset input value to allow selecting the same file again if needed
+                    event.target.value = '';
+                };
+                reader.readAsText(file);
+            },
+
+            // --- Navigation ---
+            switchTab(tabName) {
+                // Update styling
+                document.querySelectorAll('.nav-btn').forEach(btn => {
+                    const icon = btn.querySelector('i');
+                    if (btn.dataset.tab === tabName) {
+                        icon.classList.remove('text-gray-400');
+                        // Add specific color based on tab
+                        if(tabName === 'home') icon.classList.add('text-accent');
+                        if(tabName === 'calendar') icon.classList.add('text-primary');
+                        if(tabName === 'rewards') icon.classList.add('text-gold');
+                        if(tabName === 'punishments') icon.classList.add('text-danger');
+                    } else {
+                        icon.classList.add('text-gray-400');
+                        icon.classList.remove('text-accent', 'text-primary', 'text-gold', 'text-danger');
+                    }
+                });
+
+                // Show Views
+                ['home', 'calendar', 'rewards', 'punishments'].forEach(v => {
+                    const el = document.getElementById(v + 'View');
+                    if (v === tabName) {
+                        el.classList.remove('hidden');
+                        if(v === 'calendar') this.renderCalendar();
+                    } else {
+                        el.classList.add('hidden');
+                    }
+                });
+            },
+
+            // --- Oaths Logic ---
+            addOath() {
+                const title = document.getElementById('newOathTitle').value;
+                const importance = parseInt(document.getElementById('newOathImportance').value);
+                const startDateStr = document.getElementById('newOathStart').value;
+                const endDateStr = document.getElementById('newOathEnd').value;
+                
+                if (!title) return alert('誓約内容を入力してください');
+                if (!startDateStr || !endDateStr) return alert('期間を入力してください');
+                if (new Date(endDateStr) < new Date(startDateStr)) return alert('終了日は開始日より後に設定してください');
+
+                // 警告ダイアログを追加
+                if (!confirm(`【警告】\n新たな誓約を結ぼうとしています。\n\n内容: ${title}\n重要度: Lv.${importance}\n期間: ${startDateStr} ～ ${endDateStr}\n\n一度交わした契約は、期間終了まで決して破棄することはできません。\n覚悟を持って契約しますか？`)) {
+                    return;
+                }
+
+                const newOath = {
+                    id: Date.now().toString(),
+                    title,
+                    importance,
+                    startDate: startDateStr,
+                    endDate: endDateStr,
+                    createdAt: new Date().toISOString()
+                };
+
+                this.data.oaths.push(newOath);
+                this.saveData();
+                this.renderHome();
+                this.closeModal('addOathModal');
+                document.getElementById('newOathTitle').value = '';
+                // Reset slider
+                document.getElementById('newOathImportance').value = 5;
+                document.getElementById('importanceVal').innerText = 5;
+            },
+
+            deleteOath(id) {
+                alert('誓約は絶対です。一度交わした契約を破棄することはできません。');
+            },
+
+            // --- Daily Check-in Logic ---
+            checkIn(oathId, status) {
+                const today = new Date().toISOString().split('T')[0];
+                if (!this.data.logs[today]) this.data.logs[today] = {};
+
+                const oath = this.data.oaths.find(o => o.id === oathId);
+                const points = oath.importance * 10;
+
+                const previousStatus = this.data.logs[today][oathId];
+                
+                if (previousStatus === 'success') this.data.points.glory -= points;
+                if (previousStatus === 'failure') this.data.points.sin -= points;
+
+                this.data.logs[today][oathId] = status;
+                
+                if (status === 'success') {
+                    this.data.points.glory += points;
+                    this.triggerConfetti(status);
+                } else {
+                    this.data.points.sin += points;
+                    this.triggerConfetti(status);
+                    
+                    // Check for Forced Punishment
+                    this.checkForcedPunishment();
+                }
+
+                this.saveData();
+                this.renderHome();
+                this.renderStats(); // Ensure stats update
+            },
+
+            checkForcedPunishment() {
+                const limit = this.data.sinLimit || 100;
+                if (this.data.points.sin >= limit) {
+                    // Filter affordable punishments (cost <= current sin)
+                    // Or just execute any punishment? Let's strictly execute one that fits or the cheapest one.
+                    const affordable = this.data.punishments.filter(p => p.cost <= this.data.points.sin);
+                    
+                    if (affordable.length > 0) {
+                        // Pick random punishment from affordable ones
+                        const punishment = affordable[Math.floor(Math.random() * affordable.length)];
+                        
+                        this.data.points.sin -= punishment.cost;
+                        alert(`【警告】Sinが限界値(${limit})を超えました。\n\n罰則が強制執行されます：\n「${punishment.name}」\n(-${punishment.cost} Sin)`);
+                    } else if (this.data.punishments.length > 0) {
+                        // If cannot afford any specific one, just reset chunk of Sin and generic punishment
+                         this.data.points.sin = Math.max(0, this.data.points.sin - 100);
+                         alert(`【警告】Sinが限界値を超えました。\n罰則を実行してください。(-100 Sin 強制徴収)`);
+                    }
+                    this.saveData();
+                    this.renderStats();
+                }
+            },
+
+            // --- Item System (Shop/Punishment) ---
+            addItem() {
+                const type = document.getElementById('newItemType').value;
+                const name = document.getElementById('newItemName').value;
+                const cost = parseInt(document.getElementById('newItemCost').value);
+
+                if(!name || isNaN(cost)) return alert('正しい値を入力してください');
+
+                const newItem = { id: Date.now(), name, cost };
+                
+                if (type === 'reward') this.data.rewards.push(newItem);
+                else this.data.punishments.push(newItem);
+
+                this.saveData();
+                this.renderItems();
+                this.closeModal('addItemModal');
+                
+                document.getElementById('newItemName').value = '';
+                document.getElementById('newItemCost').value = '';
+            },
+
+            deleteItem(id, type) {
+                if(!confirm('削除しますか？')) return;
+                if(type === 'reward') this.data.rewards = this.data.rewards.filter(i => i.id !== id);
+                else this.data.punishments = this.data.punishments.filter(i => i.id !== id);
+                this.saveData();
+                this.renderItems();
+            },
+
+            purchaseReward(id) {
+                const item = this.data.rewards.find(i => i.id === id);
+                if (this.data.points.glory >= item.cost) {
+                    if(confirm(`${item.name} を交換しますか？ (-${item.cost} Glory)`)) {
+                        this.data.points.glory -= item.cost;
+                        this.saveData();
+                        alert(`「${item.name}」を入手しました。`);
+                    }
+                } else {
+                    alert('Gloryポイントが足りません。');
+                }
+            },
+
+            executePunishment(id) {
+                const item = this.data.punishments.find(i => i.id === id);
+                if(confirm(`${item.name} を執行し、罪を償いますか？ (-${item.cost} Sin)`)) {
+                    const reduction = Math.min(this.data.points.sin, item.cost);
+                    this.data.points.sin -= reduction;
+                    this.saveData();
+                    alert(`罰則を執行しました。罪が ${reduction} ポイント浄化されました。`);
+                }
+            },
+
+            // --- Rendering ---
+            render() {
+                this.renderStats();
+                this.renderHome();
+                this.renderItems();
+            },
+
+            renderStats() {
+                // Animate numbers (simple implementation)
+                document.getElementById('gloryDisplay').innerText = this.data.points.glory;
+                document.getElementById('sinDisplay').innerText = this.data.points.sin;
+                document.getElementById('gloryBalanceText').innerText = this.data.points.glory;
+                document.getElementById('sinBalanceText').innerText = this.data.points.sin;
+            },
+
+            renderHome() {
+                const container = document.getElementById('oathList');
+                container.innerHTML = '';
+                const todayStr = new Date().toISOString().split('T')[0];
+                const todayDate = new Date(todayStr);
+
+                if (this.data.oaths.length === 0) {
+                    container.innerHTML = `<div class="col-span-1 md:col-span-2 text-center p-10 text-gray-500 border border-dashed border-gray-700 rounded-xl">誓約がありません。<br>右上のボタンから追加してください。</div>`;
+                    return;
+                }
+
+                this.data.oaths.forEach(oath => {
+                    const status = this.data.logs[todayStr] ? this.data.logs[todayStr][oath.id] : null;
+                    let statusClass = 'border-l-4 border-gray-600';
+                    if (status === 'success') statusClass = 'border-l-4 border-primary bg-primary/5';
+                    if (status === 'failure') statusClass = 'border-l-4 border-danger bg-danger/5';
+
+                    // Calculate Days and Progress
+                    const startDate = new Date(oath.startDate);
+                    const endDate = new Date(oath.endDate || oath.startDate); // fallback
+                    
+                    // Check if active
+                    const isActive = todayDate >= startDate && todayDate <= endDate;
+                    
+                    const totalDuration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                    const daysPassed = Math.ceil((todayDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                    
+                    let dayDisplay = `DAY ${Math.max(1, Math.min(daysPassed, totalDuration))} / ${totalDuration}`;
+                    let activeColor = isActive ? 'text-accent bg-accent/10' : 'text-gray-500 bg-gray-700/50';
+
+                    const html = `
+                        <div class="glass-card p-5 rounded-xl relative group ${statusClass} ${!isActive ? 'opacity-60 grayscale' : ''}">
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <div class="flex items-center gap-3 mb-1">
+                                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">LV.${oath.importance} OATH</span>
+                                        <span class="text-[10px] ${activeColor} font-bold uppercase tracking-wider px-2 py-0.5 rounded">${dayDisplay}</span>
+                                    </div>
+                                    <h3 class="text-lg font-bold text-white leading-tight">${oath.title}</h3>
+                                    <div class="text-[10px] text-gray-500 font-mono mt-1">${oath.startDate} ～ ${oath.endDate}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex gap-2 mt-4">
+                                <button onclick="app.checkIn('${oath.id}', 'success')" 
+                                    ${!isActive ? 'disabled' : ''}
+                                    class="flex-1 py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all 
+                                    ${status === 'success' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'} 
+                                    ${status && status !== 'success' ? 'opacity-30' : ''}
+                                    ${!isActive ? 'cursor-not-allowed opacity-20' : ''}">
+                                    <i class="ph-bold ph-check"></i> 達成
+                                </button>
+                                <button onclick="app.checkIn('${oath.id}', 'failure')" 
+                                    ${!isActive ? 'disabled' : ''}
+                                    class="flex-1 py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all
+                                    ${status === 'failure' ? 'bg-danger text-white shadow-lg shadow-danger/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'} 
+                                    ${status && status !== 'failure' ? 'opacity-30' : ''}
+                                    ${!isActive ? 'cursor-not-allowed opacity-20' : ''}">
+                                    <i class="ph-bold ph-x"></i> 違反
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML += html;
+                });
+            },
+
+            renderItems() {
+                // Rewards
+                const rContainer = document.getElementById('rewardsList');
+                rContainer.innerHTML = '';
+                this.data.rewards.forEach(item => {
+                    const canAfford = this.data.points.glory >= item.cost;
+                    rContainer.innerHTML += `
+                        <div class="glass-card p-4 rounded-xl flex flex-col justify-between h-full relative group">
+                            <button onclick="app.deleteItem(${item.id}, 'reward')" class="absolute top-2 right-2 text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100"><i class="ph-fill ph-x"></i></button>
+                            <div class="mb-3">
+                                <div class="text-gold font-mono font-bold text-lg mb-1">${item.cost} Pt</div>
+                                <div class="font-bold text-white text-sm leading-tight">${item.name}</div>
+                            </div>
+                            <button onclick="app.purchaseReward(${item.id})" class="w-full py-2 rounded-lg text-xs font-bold ${canAfford ? 'bg-gold text-black hover:bg-yellow-300' : 'bg-gray-700 text-gray-500 cursor-not-allowed'} transition-colors">
+                                交換する
+                            </button>
+                        </div>
+                    `;
+                });
+
+                // Punishments
+                const pContainer = document.getElementById('punishmentsList');
+                pContainer.innerHTML = '';
+                this.data.punishments.forEach(item => {
+                    pContainer.innerHTML += `
+                        <div class="glass-card p-4 rounded-xl flex items-center justify-between group border border-danger/20">
+                            <div>
+                                <div class="text-danger font-mono font-bold text-lg mb-1">-${item.cost} Sin</div>
+                                <div class="font-bold text-white text-sm">${item.name}</div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button onclick="app.executePunishment(${item.id})" class="bg-danger/20 hover:bg-danger text-danger hover:text-white border border-danger px-4 py-2 rounded-lg text-xs font-bold transition-all">
+                                    執行
+                                </button>
+                                <button onclick="app.deleteItem(${item.id}, 'punishment')" class="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100"><i class="ph-fill ph-trash"></i></button>
+                            </div>
+                        </div>
+                    `;
+                });
+            },
+
+            renderCalendar() {
+                const grid = document.getElementById('calendarGrid');
+                const label = document.getElementById('currentMonthLabel');
+                grid.innerHTML = '';
+
+                const year = this.data.currentDate.getFullYear();
+                const month = this.data.currentDate.getMonth();
+                
+                label.innerText = `${year}.${String(month + 1).padStart(2, '0')}`;
+
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+                // Empty cells
+                for (let i = 0; i < firstDay; i++) {
+                    grid.innerHTML += `<div class="aspect-square rounded-lg bg-white/5 opacity-30"></div>`;
+                }
+
+                // Days
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const logs = this.data.logs[dateStr];
+                    
+                    let bgClass = 'bg-white/5 hover:bg-white/10';
+                    let content = `<span class="text-gray-400">${d}</span>`;
+
+                    if (logs) {
+                        const statuses = Object.values(logs);
+                        const successCount = statuses.filter(s => s === 'success').length;
+                        const failCount = statuses.filter(s => s === 'failure').length;
+                        const totalOaths = this.data.oaths.length; 
+
+                        if (failCount > 0) {
+                            bgClass = 'bg-danger/20 border border-danger/50 shadow shadow-danger/20';
+                            content = `<span class="text-white font-bold">${d}</span>`;
+                        } else if (successCount > 0 && successCount >= (totalOaths > 0 ? totalOaths : 1)) {
+                            // Perfect day
+                            bgClass = 'bg-primary/20 border border-primary/50 shadow shadow-primary/20';
+                            content = `<span class="text-white font-bold">${d}</span>`;
+                        } else if (successCount > 0) {
+                            // Partial
+                            bgClass = 'bg-gold/10 border border-gold/30';
+                        }
+                    }
+
+                    // Highlight today
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    if (dateStr === todayStr) {
+                        bgClass += ' ring-2 ring-white';
+                    }
+
+                    grid.innerHTML += `
+                        <div class="aspect-square rounded-lg ${bgClass} flex items-center justify-center text-sm transition-all cursor-default">
+                            ${content}
+                        </div>
+                    `;
+                }
+            },
+
+            changeMonth(offset) {
+                this.data.currentDate.setMonth(this.data.currentDate.getMonth() + offset);
+                this.renderCalendar();
+            },
+
+            // --- Utilities ---
+            openModal(id, type = null) {
+                document.getElementById(id).classList.remove('hidden');
+                document.getElementById(id).classList.add('flex');
+                
+                if(id === 'addItemModal') {
+                    const typeInput = document.getElementById('newItemType');
+                    const title = document.getElementById('itemModalTitle');
+                    typeInput.value = type;
+                    if(type === 'reward') title.innerText = '報酬の追加';
+                    else title.innerText = '罰則の追加';
+                }
+            },
+
+            closeModal(id) {
+                document.getElementById(id).classList.add('hidden');
+                document.getElementById(id).classList.remove('flex');
+            },
+
+            startClock() {
+                // Could act as a regular re-render interval if needed for date changes
+            },
+
+            triggerConfetti(type) {
+                // Simple CSS visual feedback via body flash
+                const color = type === 'success' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(244, 63, 94, 0.2)';
+                const flash = document.createElement('div');
+                flash.style.position = 'fixed';
+                flash.style.inset = '0';
+                flash.style.backgroundColor = color;
+                flash.style.zIndex = '999';
+                flash.style.pointerEvents = 'none';
+                flash.style.transition = 'opacity 0.5s ease-out';
+                document.body.appendChild(flash);
+                
+                setTimeout(() => {
+                    flash.style.opacity = '0';
+                    setTimeout(() => flash.remove(), 500);
+                }, 50);
+            }
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+    </script>
+</body>
+</html>
