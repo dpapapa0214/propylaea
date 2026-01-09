@@ -49,6 +49,37 @@
         }
     </script>
 
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Inter"', '"Noto Sans JP"', 'sans-serif'],
+                    },
+                    colors: {
+                        background: '#0f172a',
+                        surface: '#1e293b',
+                        primary: '#10b981', // Emerald for Success
+                        danger: '#f43f5e',  // Rose for Failure/Sin
+                        gold: '#fbbf24',    // Amber for Glory
+                        accent: '#6366f1',  // Indigo
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'slide-in': 'slideIn 0.3s ease-out forwards',
+                    },
+                    keyframes: {
+                        slideIn: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
         body {
             background-color: #050505;
@@ -432,6 +463,11 @@
                 if (stored) {
                     const parsed = JSON.parse(stored);
                     this.data = { ...this.data, ...parsed };
+                    
+                    // 修正: currentDateが文字列として復元されてしまう問題を解決
+                    // 常にDateオブジェクトとして再初期化する
+                    this.data.currentDate = new Date();
+
                     if (!this.data.sinLimit) this.data.sinLimit = 100; // Backwards compatibility
                     if(Array.isArray(this.data.logs)) this.data.logs = {}; 
                 }
