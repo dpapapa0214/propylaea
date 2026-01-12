@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karaoke Log</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: 'hsl(var(--color-primary-50) / <alpha-value>)',
+                            100: 'hsl(var(--color-primary-100) / <alpha-value>)',
+                            200: 'hsl(var(--color-primary-200) / <alpha-value>)',
+                            300: 'hsl(var(--color-primary-300) / <alpha-value>)',
+                            400: 'hsl(var(--color-primary-400) / <alpha-value>)',
+                            500: 'hsl(var(--color-primary-500) / <alpha-value>)',
+                            600: 'hsl(var(--color-primary-600) / <alpha-value>)',
+                            700: 'hsl(var(--color-primary-700) / <alpha-value>)',
+                            800: 'hsl(var(--color-primary-800) / <alpha-value>)',
+                            900: 'hsl(var(--color-primary-900) / <alpha-value>)',
+                        },
+                        accent: {
+                            50: 'hsl(var(--color-accent-50) / <alpha-value>)',
+                            100: 'hsl(var(--color-accent-100) / <alpha-value>)',
+                            200: 'hsl(var(--color-accent-200) / <alpha-value>)',
+                            300: 'hsl(var(--color-accent-300) / <alpha-value>)',
+                            400: 'hsl(var(--color-accent-400) / <alpha-value>)',
+                            500: 'hsl(var(--color-accent-500) / <alpha-value>)',
+                            600: 'hsl(var(--color-accent-600) / <alpha-value>)',
+                            700: 'hsl(var(--color-accent-700) / <alpha-value>)',
+                            800: 'hsl(var(--color-accent-800) / <alpha-value>)',
+                            900: 'hsl(var(--color-accent-900) / <alpha-value>)',
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                        'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px) scale(0.98)' },
+                            '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(107, 114, 128, 0.8); }
+        .pb-safe-area { padding-bottom: env(safe-area-inset-bottom); }
+    </style>
+</head>
+<body class="bg-gray-50 text-slate-800 antialiased selection:bg-primary-200 selection:text-primary-900">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef, createContext, useContext } = React;
+
+        // --- Icons ---
+        const Icon = ({ children, className, size = 24, ...props }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>{children}</svg>
+        );
+        const Mic = (p) => <Icon {...p}><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></Icon>;
+        const ListIcon = (p) => <Icon {...p}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></Icon>;
+        const BarChart2 = (p) => <Icon {...p}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></Icon>;
+        const Music = (p) => <Icon {...p}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></Icon>;
+        const User = (p) => <Icon {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Icon>;
+        const Trash2 = (p) => <Icon {...p}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 1-1 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></Icon>;
+        const Star = (p) => <Icon {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></Icon>;
+        const Save = (p) => <Icon {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></Icon>;
+        const Plus = (p) => <Icon {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Icon>;
+        const Edit2 = (p) => <Icon {...p}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></Icon>;
+        const ArrowLeft = (p) => <Icon {...p}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></Icon>;
+        const PlayCircle = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></Icon>;
+        const ExternalLink = (p) => <Icon {...p}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></Icon>;
+        const Settings = (p) => <Icon {...p}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.73v.51a2 2 0 0 1-1 1.73l-.15.1a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.73v-.51a2 2 0 0 1 1-1.73l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></Icon>;
+        const Download = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></Icon>;
+        const Upload = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></Icon>;
+        const X = (p) => <Icon {...p}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></Icon>;
+        const ArrowUp = (p) => <Icon {...p}><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></Icon>;
+        const ArrowDown = (p) => <Icon {...p}><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></Icon>;
+        const Palette = (p) => <Icon {...p}><circle cx="12" cy="12" r="3"/><path d="M19 12A7 7 0 1 1 5 12c0 1.2.3 2.3.8 3.3L6 16H5a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2h-1l.2-1.7c.5-.9.8-2.1.8-3.3z"/><path d="m18 16-1-1-1 1" /><path d="m15 16-1-1-1 1" /><path d="m12 16-1-1-1 1" /><path d="m9 16-1-1-1 1" /><path d="m6 16-1-1-1 1" /></Icon>;
+        const Check = (p) => <Icon {...p}><polyline points="20 6 9 17 4 12"/></Icon>;
+        const Search = (p) => <Icon {...p}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></Icon>;
+        const Shuffle = (p) => <Icon {...p}><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></Icon>;
+        const Heart = (p) => <Icon {...p}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></Icon>;
+        const FileText = (p) => <Icon {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></Icon>;
+        const Clock = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></Icon>;
+        const TrendingUp = (p) => <Icon {...p}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></Icon>;
+        const Trophy = (p) => <Icon {...p}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></Icon>;
+        const Calendar = (p) => <Icon {...p}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></Icon>;
+        const ArrowUpDown = (p) => <Icon {...p}><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></Icon>;
+
+        // --- Context & Hooks ---
+        const ToastContext = createContext();
+        const useToast = () => useContext(ToastContext);
+
+        function ToastProvider({ children }) {
+            const [toasts, setToasts] = useState([]);
+            const addToast = (message, type = 'success') => {
+                const id = Date.now();
+                setToasts(prev => [...prev, { id, message, type }]);
+                setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
+            };
+            return (
+                <ToastContext.Provider value={addToast}>
+                    {children}
+                    <div className="fixed bottom-24 md:bottom-8 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center space-y-2 pointer-events-none">
+                        {toasts.map(t => (
+                            <div key={t.id} className={`animate-slide-up px-6 py-3 rounded-full shadow-2xl text-white font-bold text-sm pointer-events-auto flex items-center ${t.type === 'error' ? 'bg-red-500' : 'bg-slate-800'}`}>
+                                {t.type === 'success' && <Check size={16} className="mr-2 text-green-400"/>}
+                                {t.message}
+                            </div>
+                        ))}
+                    </div>
+                </ToastContext.Provider>
+            );
+        }
+
+        const STORAGE_KEY_SCORES = 'karaoke_app_scores';
+        const STORAGE_KEY_ARTISTS = 'karaoke_app_artists';
+        const STORAGE_KEY_SONGS = 'karaoke_app_songs';
+        const STORAGE_KEY_THEME = 'karaoke_app_theme';
+
+        function useLocalStorage(key, initialValue) {
+            const [storedValue, setStoredValue] = useState(() => {
+                try {
+                    const item = window.localStorage.getItem(key);
+                    return item ? JSON.parse(item) : initialValue;
+                } catch (error) { return initialValue; }
+            });
+            const setValue = (value) => {
+                try {
+                    const valueToStore = value instanceof Function ? value(storedValue) : value;
+                    setStoredValue(valueToStore);
+                    window.localStorage.setItem(key, JSON.stringify(valueToStore));
+                } catch (error) { console.error(error); }
+            };
+            return [storedValue, setValue];
+        }
+        
+        const themes = {
+            indigo: {
+                '--color-primary-50': '239 96% 95%', '--color-primary-100': '236 93% 90%', '--color-primary-200': '234 89% 82%', '--color-primary-300': '231 81% 74%', '--color-primary-400': '229 76% 65%', '--color-primary-500': '228 70% 56%', '--color-primary-600': '228 70% 49%', '--color-primary-700': '226 71% 40%', '--color-primary-800': '225 66% 32%', '--color-primary-900': '225 60% 26%',
+                '--color-accent-50': '342 100% 96%', '--color-accent-100': '341 100% 92%', '--color-accent-200': '341 100% 86%', '--color-accent-300': '340 95% 78%', '--color-accent-400': '340 89% 70%', '--color-accent-500': '340 82% 61%', '--color-accent-600': '337 84% 57%', '--color-accent-700': '333 82% 50%', '--color-accent-800': '329 80% 42%', '--color-accent-900': '323 72% 35%',
+            },
+            rose: {
+                '--color-primary-50': '355 100% 95%', '--color-primary-100': '355 93% 90%', '--color-primary-200': '353 92% 82%', '--color-primary-300': '350 90% 73%', '--color-primary-400': '348 89% 65%', '--color-primary-500': '347 89% 61%', '--color-primary-600': '346 91% 54%', '--color-primary-700': '344 91% 47%', '--color-primary-800': '341 84% 41%', '--color-primary-900': '336 79% 36%',
+                '--color-accent-50': '170 86% 95%', '--color-accent-100': '170 79% 88%', '--color-accent-200': '171 73% 78%', '--color-accent-300': '171 63% 66%', '--color-accent-400': '172 55% 53%', '--color-accent-500': '172 63% 45%', '--color-accent-600': '173 70% 40%', '--color-accent-700': '174 77% 33%', '--color-accent-800': '175 77% 28%', '--color-accent-900': '176 72% 24%',
+            },
+            teal: {
+                '--color-primary-50': '168 86% 94%', '--color-primary-100': '169 75% 86%', '--color-primary-200': '170 69% 76%', '--color-primary-300': '172 61% 65%', '--color-primary-400': '173 59% 51%', '--color-primary-500': '174 74% 41%', '--color-primary-600': '175 80% 36%', '--color-primary-700': '176 83% 31%', '--color-primary-800': '177 78% 27%', '--color-primary-900': '178 70% 23%',
+                '--color-accent-50': '38 100% 95%', '--color-accent-100': '38 97% 88%', '--color-accent-200': '38 97% 78%', '--color-accent-300': '38 96% 68%', '--color-accent-400': '39 96% 59%', '--color-accent-500': '43 96% 56%', '--color-accent-600': '40 96% 54%', '--color-accent-700': '36 95% 50%', '--color-accent-800': '33 93% 45%', '--color-accent-900': '29 89% 39%',
+            },
+        };
+
+        // --- Helper Components ---
+        function Avatar({ name, size = "md", className = "" }) {
+            const initial = name ? name.charAt(0).toUpperCase() : '?';
+            const colors = ['bg-red-100 text-red-600', 'bg-orange-100 text-orange-600', 'bg-amber-100 text-amber-600', 'bg-green-100 text-green-600', 'bg-emerald-100 text-emerald-600', 'bg-teal-100 text-teal-600', 'bg-cyan-100 text-cyan-600', 'bg-sky-100 text-sky-600', 'bg-blue-100 text-blue-600', 'bg-indigo-100 text-indigo-600', 'bg-violet-100 text-violet-600', 'bg-purple-100 text-purple-600', 'bg-fuchsia-100 text-fuchsia-600', 'bg-pink-100 text-pink-600', 'bg-rose-100 text-rose-600'];
+            const colorIndex = name ? name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length : 0;
+            const sizeClass = size === "sm" ? "w-8 h-8 text-xs" : size === "lg" ? "w-16 h-16 text-2xl" : "w-10 h-10 text-sm";
+            return (<div className={`rounded-full flex items-center justify-center font-bold ${colors[colorIndex]} ${sizeClass} ${className} shadow-sm border border-white`}>{initial}</div>);
+        }
+
+        function Modal({ isOpen, onClose, title, children }) {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden max-h-[90vh] flex flex-col scale-100 transform transition-all" onClick={e => e.stopPropagation()}>
+                        <div className="bg-white px-6 py-4 flex justify-between items-center flex-shrink-0 border-b border-gray-100">
+                            <h3 className="text-xl font-bold flex items-center text-slate-800">{title}</h3>
+                            <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"><X size={20}/></button>
+                        </div>
+                        <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">{children}</div>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- Modals (BulkAdd, BulkScore, Settings) ---
+        function BulkAddModal({ isOpen, onClose, type, artists, onAdd }) {
+            const [text, setText] = useState('');
+            const [selectedArtistId, setSelectedArtistId] = useState('');
+            const toast = useToast();
+            const handleAdd = () => {
+                const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                if (lines.length === 0) return;
+                if (type === 'song' && !selectedArtistId) { toast('アーティストを選択してください', 'error'); return; }
+                onAdd(lines, selectedArtistId); setText(''); toast(`${lines.length}件を追加しました`); onClose();
+            };
+            return (
+                <Modal isOpen={isOpen} onClose={onClose} title={`${type === 'artist' ? 'アーティスト' : '曲'}の一括登録`}>
+                    <div className="space-y-5">
+                        <p className="text-sm text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-100">{type === 'artist' ? 'アーティスト名' : '曲名'}を改行区切りで入力してください。</p>
+                        {type === 'song' && (<div><label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">アーティスト</label><select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none" value={selectedArtistId} onChange={e => setSelectedArtistId(e.target.value)}><option value="">選択してください</option>{artists.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>)}
+                        <textarea className="w-full h-48 p-4 bg-white border border-slate-200 rounded-xl outline-none resize-none text-sm font-mono" placeholder={type === 'artist' ? "Official髭男dism\nKing Gnu" : "Pretender\n白日"} value={text} onChange={e => setText(e.target.value)}/>
+                        <button onClick={handleAdd} className="w-full bg-primary-600 text-white py-3.5 rounded-xl font-bold shadow-lg hover:bg-primary-700">一括登録する</button>
+                    </div>
+                </Modal>
+            );
+        }
+
+        function BulkScoreModal({ isOpen, onClose, onAdd }) {
+            const [text, setText] = useState('');
+            const toast = useToast();
+            const handleAdd = () => {
+                const lines = text.split('\n').filter(l => l.trim());
+                const parsedData = [];
+                
+                // New logic: Support "Title, Artist, Score1, Score2..."
+                lines.forEach(line => {
+                    const parts = line.split(/[,\t]+/).map(p => p.trim());
+                    if (parts.length >= 3) {
+                        const title = parts[0];
+                        const artist = parts[1];
+                        // Get all subsequent parts that are numbers
+                        for (let i = 2; i < parts.length; i++) {
+                            const scoreStr = parts[i];
+                            const score = parseFloat(scoreStr);
+                            if (!isNaN(score)) {
+                                parsedData.push({ title, artist, score, memo: '' });
+                            }
+                        }
+                    }
+                });
+
+                if (parsedData.length === 0) { toast('データが見つかりません', 'error'); return; }
+                onAdd(parsedData); setText(''); toast(`${parsedData.length}件のスコアを追加しました`); onClose();
+            };
+            return (
+                <Modal isOpen={isOpen} onClose={onClose} title="スコア一括登録">
+                    <div className="space-y-5">
+                        <div className="text-xs text-slate-500 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <p className="mb-2 font-bold">フォーマット: 曲名, アーティスト名, 点数1, 点数2...</p>
+                            <p className="opacity-75">例: Pretender, Official髭男dism, 92.500, 93.100</p>
+                        </div>
+                        <textarea className="w-full h-48 p-4 bg-white border border-slate-200 rounded-xl outline-none resize-none text-sm font-mono" placeholder={"Pretender, Official髭男dism, 92.100, 93.200\nLemon, 米津玄師, 88.5"} value={text} onChange={e => setText(e.target.value)}/>
+                        <button onClick={handleAdd} className="w-full bg-primary-600 text-white py-3.5 rounded-xl font-bold shadow-lg hover:bg-primary-700">登録する</button>
+                    </div>
+                </Modal>
+            );
+        }
+
+        function SettingsModal({ onClose, scores, artists, songs, currentTheme, onChangeTheme }) {
+            const fileInputRef = useRef(null);
+            const toast = useToast();
+            const themeOptions = [{ id: 'indigo', name: 'インディゴ', bg: 'bg-indigo-600', accent: 'bg-pink-500' }, { id: 'rose', name: 'ローズ', bg: 'bg-rose-600', accent: 'bg-emerald-500' }, { id: 'teal', name: 'ティール', bg: 'bg-teal-600', accent: 'bg-amber-500' }];
+            const handleExportJson = () => { const data = { scores, artists, songs, theme: currentTheme, exportedAt: new Date().toISOString(), version: 6 }; const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `karaoke_log_backup.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); toast('JSONエクスポート完了'); };
+            const handleExportCsv = () => { const bom = new Uint8Array([0xEF, 0xBB, 0xBF]); let csvContent = "日時,曲名,アーティスト,点数,メモ\n"; scores.forEach(s => { const line = [`"${new Date(s.date).toLocaleString()}"`, `"${s.title.replace(/"/g, '""')}"`, `"${s.artist.replace(/"/g, '""')}"`, s.score, `"${(s.memo || '').replace(/"/g, '""')}"`].join(","); csvContent += line + "\n"; }); const blob = new Blob([bom, csvContent], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `karaoke_log_scores.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); toast('CSVエクスポート完了'); };
+            const handleFileChange = (event) => { const file = event.target.files[0]; if (!file) return; if (!window.confirm('現在のデータを上書きしますか？')) { event.target.value = ''; return; } const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if (Array.isArray(data.scores)) { localStorage.setItem(STORAGE_KEY_SCORES, JSON.stringify(data.scores)); localStorage.setItem(STORAGE_KEY_ARTISTS, JSON.stringify(data.artists || [])); localStorage.setItem(STORAGE_KEY_SONGS, JSON.stringify(data.songs || [])); if (data.theme) localStorage.setItem(STORAGE_KEY_THEME, JSON.stringify(data.theme)); alert('インポート完了。再読み込みします。'); window.location.reload(); } } catch (err) { toast('読み込み失敗', 'error'); } }; reader.readAsText(file); };
+            return (
+                <Modal isOpen={true} onClose={onClose} title="設定">
+                    <div className="space-y-8">
+                        <div><h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">カラーテーマ</h4><div className="grid grid-cols-3 gap-4">{themeOptions.map(t => (<button key={t.id} onClick={() => onChangeTheme(t.id)} className={`group relative p-4 rounded-2xl border transition-all ${currentTheme === t.id ? 'border-primary-500 bg-primary-50/50' : 'border-slate-200 hover:border-slate-300'}`}><div className="flex justify-center space-x-2 mb-3"><span className={`w-6 h-6 rounded-full shadow-sm ${t.bg}`}></span><span className={`w-6 h-6 rounded-full shadow-sm ${t.accent} -ml-2`}></span></div><div className="text-xs font-bold text-center text-slate-600">{t.name}</div></button>))}</div></div>
+                        <div><h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">データ管理</h4><div className="grid grid-cols-2 gap-4"><button onClick={handleExportJson} className="flex flex-col items-center bg-white border border-slate-200 text-slate-600 p-4 rounded-2xl font-bold hover:bg-slate-50"><FileText className="mb-2 text-primary-500" size={24}/><span className="text-xs">JSON保存</span></button><button onClick={handleExportCsv} className="flex flex-col items-center bg-white border border-slate-200 text-slate-600 p-4 rounded-2xl font-bold hover:bg-slate-50"><ListIcon className="mb-2 text-green-500" size={24}/><span className="text-xs">CSV保存</span></button></div><button onClick={() => fileInputRef.current?.click()} className="w-full mt-4 bg-slate-100 text-slate-600 px-4 py-4 rounded-xl font-bold hover:bg-slate-200 text-sm"><Upload className="mr-2 inline" size={18}/> バックアップから復元</button><input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" /></div>
+                    </div>
+                </Modal>
+            )
+        }
+
+        // --- Dashboard Component (Rankings) ---
+        function Dashboard({ scores, artists, songs, setActiveTab }) {
+            const stats = useMemo(() => {
+                if (scores.length === 0) return null;
+                const scoreValues = scores.map(s => s.score);
+                const average = scoreValues.reduce((a, b) => a + b, 0) / scores.length;
+                const max = Math.max(...scoreValues);
+                const recentTrend = scores.slice(0, 20).reverse().map(s => s.score);
+                
+                const artistCounts = {};
+                scores.forEach(s => { artistCounts[s.artist] = (artistCounts[s.artist] || 0) + 1; });
+                const topArtists = Object.entries(artistCounts).sort(([, a], [, b]) => b - a).slice(0, 5);
+                
+                const songBestScores = {};
+                scores.forEach(s => {
+                    const key = `${s.title}-${s.artist}`;
+                    if (!songBestScores[key] || s.score > songBestScores[key].score) songBestScores[key] = s;
+                });
+                const topSongs = Object.values(songBestScores).sort((a, b) => b.score - a.score).slice(0, 5);
+                
+                return { totalSongs: scores.length, average: average.toFixed(2), max: max.toFixed(2), topArtists, topSongs, recentTrend };
+            }, [scores]);
+
+            const RankingList = ({ items, type }) => (
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 h-full">
+                    <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center">
+                        {type === 'artist' ? <User className="mr-2 text-primary-500"/> : <Star className="mr-2 text-amber-500"/>} 
+                        {type === 'artist' ? 'アーティスト Ranking' : 'ハイスコア Ranking'}
+                    </h3>
+                    <div className="space-y-4">
+                        {items.map((item, idx) => {
+                            const isArtist = type === 'artist';
+                            const title = isArtist ? item[0] : item.title;
+                            const sub = isArtist ? `${item[1]} songs` : item.artist;
+                            const score = isArtist ? null : item.score.toFixed(2);
+                            const rankColor = idx === 0 ? 'bg-yellow-400 text-white' : idx === 1 ? 'bg-slate-300 text-white' : idx === 2 ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-500';
+                            
+                            return (
+                                <div key={idx} className="flex items-center">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mr-4 flex-shrink-0 ${rankColor}`}>
+                                        {idx < 3 ? <Trophy size={14}/> : idx + 1}
+                                    </div>
+                                    <div className="flex-1 min-w-0 mr-4">
+                                        <div className="font-bold text-slate-700 truncate">{title}</div>
+                                        <div className="text-xs text-slate-400 truncate">{sub}</div>
+                                    </div>
+                                    {score && <div className="font-mono font-bold text-primary-600">{score}</div>}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+
+            // 簡易チャート
+            const SimpleChart = ({ data }) => {
+                if (!data || data.length === 0) return null;
+                const min = Math.min(...data) - 5;
+                const max = 100;
+                return (
+                    <div className="h-24 flex items-end justify-between gap-1 mt-4">
+                        {data.map((val, i) => (
+                            <div key={i} className="w-full bg-primary-100 rounded-t-sm relative group">
+                                <div className="absolute bottom-0 w-full bg-primary-400 rounded-t-sm transition-all hover:bg-primary-500" style={{ height: `${((val - min) / (max - min)) * 100}%` }}></div>
+                            </div>
+                        ))}
+                    </div>
+                );
+            };
+
+            return (
+                <div className="animate-fade-in space-y-8 pb-20">
+                    <header className="mb-6"><h2 className="text-3xl font-extrabold text-slate-800">Dashboard</h2></header>
+                    {!stats ? (
+                        <div className="bg-gradient-to-br from-primary-500 to-primary-700 p-10 rounded-3xl text-center shadow-xl text-white">
+                            <h3 className="text-2xl font-bold mb-3">Welcome!</h3><p className="mb-8 opacity-80">スコアを記録して統計を表示しましょう</p>
+                            <button onClick={() => setActiveTab('record')} className="bg-white text-primary-600 px-8 py-4 rounded-full font-bold shadow-lg hover:scale-105 transition-transform">最初のスコアを記録</button>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100"><div className="text-xs text-slate-400 font-bold uppercase mb-1">Total Songs</div><div className="text-3xl font-black text-slate-800">{stats.totalSongs}</div></div>
+                                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100"><div className="text-xs text-slate-400 font-bold uppercase mb-1">Average</div><div className="text-3xl font-black text-primary-600">{stats.average}</div></div>
+                                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100"><div className="text-xs text-slate-400 font-bold uppercase mb-1">Best Score</div><div className="text-3xl font-black text-amber-500">{stats.max}</div></div>
+                                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100"><div className="text-xs text-slate-400 font-bold uppercase mb-1">Registered</div><div className="text-3xl font-black text-slate-800">{songs.length}</div></div>
+                            </div>
+                            
+                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                                <div className="flex justify-between items-end mb-2">
+                                    <h3 className="font-bold text-slate-700">Recent Score Trend</h3>
+                                    <span className="text-xs text-slate-400">Last 20 songs</span>
+                                </div>
+                                <SimpleChart data={stats.recentTrend} />
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <RankingList items={stats.topArtists} type="artist" />
+                                <RankingList items={stats.topSongs} type="song" />
+                            </div>
+                        </>
+                    )}
+                </div>
+            );
+        }
+
+        // --- Song Detail View (Enhanced) ---
+        function SongDetailView({ song, scores, artistName, onBack, onRecord }) {
+            const stats = useMemo(() => {
+                const songScores = scores.filter(s => s.songId === song.id).sort((a, b) => new Date(b.date) - new Date(a.date));
+                if (songScores.length === 0) return null;
+                const values = songScores.map(s => s.score);
+                const max = Math.max(...values);
+                const min = Math.min(...values);
+                const avg = values.reduce((a, b) => a + b, 0) / values.length;
+                const bestRecord = songScores.find(s => s.score === max);
+                // Chart data (oldest to newest, max 20)
+                const chartData = [...songScores].reverse().slice(-20).map(s => s.score);
+                
+                return { count: songScores.length, max, min, avg, bestRecord, history: songScores, chartData };
+            }, [song, scores]);
+
+            const ScoreBar = ({ score }) => (
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden w-full max-w-[100px]">
+                    <div className="h-full bg-gradient-to-r from-primary-400 to-accent-400" style={{ width: `${Math.min(100, Math.max(0, (score - 80) * 5))}%` }}></div>
+                </div>
+            );
+
+            return (
+                <div className="animate-fade-in pb-20">
+                    <button onClick={onBack} className="flex items-center text-slate-500 mb-6 hover:text-primary-600 font-bold transition-colors"><ArrowLeft size={20} className="mr-2"/> 戻る</button>
+                    
+                    <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 p-8 mb-8 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none transform translate-x-1/4 -translate-y-1/4"><Music size={300}/></div>
+                        <div className="relative z-10 text-center">
+                            <div className="text-sm font-bold text-primary-600 uppercase tracking-widest mb-2">{artistName}</div>
+                            <h2 className="text-3xl md:text-4xl font-black text-slate-800 mb-6 leading-tight">{song.title}</h2>
+                            
+                            {!stats ? (
+                                <div className="text-slate-400 py-8">まだ記録がありません</div>
+                            ) : (
+                                <>
+                                    <div className="flex items-center justify-center gap-2 mb-8">
+                                        <div className="bg-amber-100 text-amber-700 px-4 py-1.5 rounded-full text-sm font-bold flex items-center"><Trophy size={14} className="mr-2"/> Best: {stats.max.toFixed(3)}</div>
+                                        <div className="text-xs text-slate-400">{new Date(stats.bestRecord.date).toLocaleDateString()}</div>
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-4 mb-8">
+                                        <div className="p-4 bg-slate-50 rounded-2xl"><div className="text-xs text-slate-400 font-bold uppercase mb-1">Average</div><div className="text-xl font-black text-slate-700">{stats.avg.toFixed(2)}</div></div>
+                                        <div className="p-4 bg-slate-50 rounded-2xl"><div className="text-xs text-slate-400 font-bold uppercase mb-1">Count</div><div className="text-xl font-black text-slate-700">{stats.count}</div></div>
+                                        <div className="p-4 bg-slate-50 rounded-2xl"><div className="text-xs text-slate-400 font-bold uppercase mb-1">Min</div><div className="text-xl font-black text-slate-700">{stats.min.toFixed(2)}</div></div>
+                                    </div>
+
+                                    {/* Chart Visualization */}
+                                    <div className="h-32 flex items-end gap-1 mb-8 px-4">
+                                        {stats.chartData.map((val, i) => (
+                                            <div key={i} className="flex-1 bg-primary-100 rounded-t-sm relative group" title={val.toFixed(2)}>
+                                                <div className="absolute bottom-0 w-full bg-primary-500 rounded-t-sm transition-all group-hover:bg-accent-500" style={{ height: `${((val - (stats.min - 2)) / (stats.max - (stats.min - 2) + 2)) * 100}%` }}></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                            
+                            <button onClick={onRecord} className="w-full md:w-auto px-10 py-4 bg-slate-800 text-white rounded-full font-bold shadow-lg hover:scale-105 transition-transform flex items-center justify-center mx-auto">
+                                <PlayCircle className="mr-2"/> この曲を記録する
+                            </button>
+                        </div>
+                    </div>
+
+                    {stats && (
+                        <div className="space-y-4">
+                            <h3 className="font-bold text-slate-700 ml-2 flex items-center"><ListIcon size={18} className="mr-2"/> History</h3>
+                            {stats.history.map(score => (
+                                <div key={score.id} className="bg-white p-4 rounded-xl border border-slate-100 flex items-center justify-between">
+                                    <div>
+                                        <div className="text-xs font-bold text-slate-400 mb-1">{new Date(score.date).toLocaleString()}</div>
+                                        {score.memo && <div className="text-sm text-slate-600 bg-slate-50 px-2 py-1 rounded inline-block">{score.memo}</div>}
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-xl font-bold text-slate-800 font-mono">{score.score.toFixed(3)}</div>
+                                        <ScoreBar score={score.score} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // --- Song Manager (Sort & List) ---
+        function SongManager({ songs, setSongs, artists, scores, onRecordClick, navParams, onNavParamsConsumed }) {
+            const [title, setTitle] = useState(''); const [artistId, setArtistId] = useState(''); const [editId, setEditId] = useState(null); const [viewSong, setViewSong] = useState(null);
+            const [search, setSearch] = useState(''); const [isBulkOpen, setIsBulkOpen] = useState(false); const [isRandomOpen, setIsRandomOpen] = useState(false); const [randomResult, setRandomResult] = useState(null);
+            const [sortKey, setSortKey] = useState('title'); const [sortOrder, setSortOrder] = useState('asc');
+            const toast = useToast();
+
+            useEffect(() => { if (navParams) { if (navParams.type === 'detail') { setViewSong(navParams.song); setEditId(null); } else if (navParams.type === 'new') { setViewSong(null); setArtistId(navParams.artistId); setEditId(null); setTitle(''); } onNavParamsConsumed(); } }, [navParams, onNavParamsConsumed]);
+
+            const handleSubmit = (e) => { e.preventDefault(); if(!title.trim()||!artistId)return; if(editId){setSongs(songs.map(s=>s.id===editId?{...s,title,artistId}:s));setEditId(null);toast('更新しました');}else{setSongs([...songs,{id:crypto.randomUUID(),title,artistId,isFavorite:false, createdAt: new Date().toISOString()}]);toast('登録しました');} setTitle(''); };
+            const handleDelete = (e,id) => { e.stopPropagation(); if(window.confirm('削除？')){setSongs(songs.filter(s=>s.id!==id));if(viewSong&&viewSong.id===id)setViewSong(null);toast('削除しました');} };
+            const toggleFavorite = (e,id) => { e.stopPropagation(); setSongs(songs.map(s=>s.id===id?{...s,isFavorite:!s.isFavorite}:s)); };
+            const handleRandomPick = () => { if(songs.length===0)return; setRandomResult(songs[Math.floor(Math.random()*songs.length)]); setIsRandomOpen(true); };
+            const getArtistName = (id) => artists.find(a=>a.id===id)?.name || 'Unknown';
+
+            const sortedSongs = useMemo(() => {
+                let items = songs.filter(s => s.title.toLowerCase().includes(search.toLowerCase()) || getArtistName(s.artistId).toLowerCase().includes(search.toLowerCase()));
+                const enriched = items.map(s => ({ ...s, playCount: scores.filter(sc => sc.songId === s.id).length, artistName: getArtistName(s.artistId) }));
+                
+                enriched.sort((a, b) => {
+                    let valA, valB;
+                    switch(sortKey) {
+                        case 'title': valA = a.title; valB = b.title; break;
+                        case 'artist': valA = a.artistName; valB = b.artistName; break;
+                        case 'playCount': valA = a.playCount; valB = b.playCount; break;
+                        case 'date': valA = a.createdAt || ''; valB = b.createdAt || ''; break;
+                        default: valA = a.title; valB = b.title;
+                    }
+                    if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+                    if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+                    return 0;
+                });
+                return enriched;
+            }, [songs, scores, sortKey, sortOrder, search, artists]);
+
+            const SortButton = ({ label, k }) => (
+                <button onClick={() => { if(sortKey===k) setSortOrder(o=>o==='asc'?'desc':'asc'); else { setSortKey(k); setSortOrder('asc'); } }} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center ${sortKey === k ? 'bg-primary-100 text-primary-700' : 'bg-slate-100 text-slate-500'}`}>
+                    {label} {sortKey === k && <ArrowUpDown size={12} className="ml-1"/>}
+                </button>
+            );
+
+            if (viewSong) {
+                return <SongDetailView song={viewSong} scores={scores} artistName={getArtistName(viewSong.artistId)} onBack={()=>setViewSong(null)} onRecord={()=>onRecordClick(viewSong.artistId, viewSong.id)} />;
+            }
+
+            return (
+                <div className="animate-fade-in pb-20">
+                    <div className="grid md:grid-cols-3 gap-6">
+                        <div className="md:col-span-1">
+                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4">
+                                <h3 className="font-bold text-slate-800 mb-4">{editId?'編集':'新規登録'}</h3>
+                                <form onSubmit={handleSubmit} className="space-y-3">
+                                    <select value={artistId} onChange={e=>setArtistId(e.target.value)} className="w-full p-3 bg-slate-50 border-none rounded-xl text-sm" required><option value="">アーティストを選択</option>{artists.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select>
+                                    <input type="text" value={title} onChange={e=>setTitle(e.target.value)} className="w-full p-3 bg-slate-50 border-none rounded-xl text-sm" placeholder="曲名" required/>
+                                    <div className="flex gap-2"><button type="submit" className="flex-1 bg-primary-600 text-white py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-primary-700" disabled={artists.length===0}>{editId?'更新':'追加'}</button>{editId && <button type="button" onClick={()=>{setEditId(null);setTitle('');setArtistId('')}} className="bg-slate-100 text-slate-600 px-4 rounded-xl text-sm font-bold">cancel</button>}</div>
+                                </form>
+                                <div className="grid grid-cols-2 gap-2 mt-4">
+                                    <button onClick={()=>setIsBulkOpen(true)} className="py-2 text-xs font-bold text-primary-600 bg-primary-50 rounded-xl hover:bg-primary-100">一括登録</button>
+                                    <button onClick={handleRandomPick} className="py-2 text-xs font-bold text-amber-600 bg-amber-50 rounded-xl hover:bg-amber-100">ランダム選曲</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="md:col-span-2">
+                            <div className="mb-4 space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="font-bold text-slate-800">登録曲 <span className="text-slate-400 text-sm ml-1">{songs.length}</span></h3>
+                                    <div className="relative"><input type="text" value={search} onChange={e=>setSearch(e.target.value)} className="bg-white border-none shadow-sm rounded-full py-1.5 px-4 text-sm w-40" placeholder="検索"/><Search className="absolute right-3 top-2 text-slate-300" size={14}/></div>
+                                </div>
+                                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                                    <SortButton label="曲名" k="title"/>
+                                    <SortButton label="歌手名" k="artist"/>
+                                    <SortButton label="回数" k="playCount"/>
+                                    <SortButton label="登録順" k="date"/>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                {sortedSongs.map(song => (
+                                    <div key={song.id} onClick={()=>setViewSong(song)} className="bg-white p-3 rounded-2xl border border-slate-100 hover:border-primary-300 hover:shadow-md transition-all cursor-pointer flex items-center justify-between group">
+                                        <div className="flex items-center min-w-0 flex-1 mr-2">
+                                            <button onClick={(e)=>toggleFavorite(e,song.id)} className={`mr-3 p-2 rounded-full flex-shrink-0 ${song.isFavorite ? 'text-pink-500 bg-pink-50' : 'text-slate-200 hover:bg-slate-50'}`}><Heart size={18} fill={song.isFavorite?"currentColor":"none"}/></button>
+                                            <div className="min-w-0">
+                                                <div className="font-bold text-slate-700 truncate">{song.title}</div>
+                                                <div className="text-xs text-slate-400 truncate flex items-center">
+                                                    {song.artistName}
+                                                    {song.playCount > 0 && <span className="ml-2 bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">{song.playCount}回</span>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={(e)=>startEdit(e,song)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg"><Edit2 size={16}/></button>
+                                            <button onClick={(e)=>handleDelete(e,song.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={16}/></button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    <BulkAddModal isOpen={isBulkOpen} onClose={()=>setIsBulkOpen(false)} type="song" artists={artists} onAdd={(lines, aId)=>setSongs([...songs,...lines.filter(n=>!songs.some(s=>s.title===n)).map(n=>({id:crypto.randomUUID(),title:n,artistId:aId,isFavorite:false,createdAt:new Date().toISOString()}))])}/>
+                    <Modal isOpen={isRandomOpen} onClose={()=>setIsRandomOpen(false)} title="今日の1曲">
+                        {randomResult && (
+                            <div className="text-center py-8">
+                                <div className="text-6xl mb-4">🎤</div>
+                                <h3 className="text-2xl font-bold text-slate-800 mb-2">{randomResult.title}</h3>
+                                <p className="text-slate-500 mb-8">{getArtistName(randomResult.artistId)}</p>
+                                <button onClick={()=>{setIsRandomOpen(false);setViewSong(randomResult)}} className="bg-primary-600 text-white px-8 py-3 rounded-full font-bold shadow-lg">詳細を見る</button>
+                            </div>
+                        )}
+                    </Modal>
+                </div>
+            );
+        }
+
+        function ArtistManager({ artists, setArtists, songs, scores, onJumpToSongDetail, onJumpToNewSong }) {
+            const [name, setName] = useState(''); const [editId, setEditId] = useState(null); const [viewArtist, setViewArtist] = useState(null);
+            const [search, setSearch] = useState(''); const [isBulkOpen, setIsBulkOpen] = useState(false);
+            const [sortKey, setSortKey] = useState('name'); const [sortOrder, setSortOrder] = useState('asc');
+            const toast = useToast();
+
+            const sortedArtists = useMemo(() => {
+                let items = artists.filter(a => a.name.toLowerCase().includes(search.toLowerCase()));
+                const enriched = items.map(a => ({ ...a, songCount: songs.filter(s => s.artistId === a.id).length }));
+                enriched.sort((a, b) => {
+                    let valA = sortKey === 'songCount' ? a.songCount : a.name.toLowerCase();
+                    let valB = sortKey === 'songCount' ? b.songCount : b.name.toLowerCase();
+                    if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+                    if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+                    return 0;
+                });
+                return enriched;
+            }, [artists, songs, search, sortKey, sortOrder]);
+
+            const handleSubmit = (e) => { e.preventDefault(); if(!name.trim())return; if(editId){ setArtists(artists.map(a=>a.id===editId?{...a,name}:a)); setEditId(null); toast('更新しました'); }else{ if(artists.some(a=>a.name===name)){toast('登録済み','error');return;} setArtists([...artists,{id:crypto.randomUUID(),name}]); toast('登録しました'); } setName(''); };
+            const handleDelete = (e,id) => { e.stopPropagation(); if(songs.some(s=>s.artistId===id)){toast('曲があるため削除不可','error');return;} if(window.confirm('削除？')){setArtists(artists.filter(a=>a.id!==id));toast('削除しました');} };
+
+            const SortButton = ({ label, k }) => (
+                <button onClick={() => { if(sortKey===k) setSortOrder(o=>o==='asc'?'desc':'asc'); else { setSortKey(k); setSortOrder('asc'); } }} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center ${sortKey === k ? 'bg-primary-100 text-primary-700' : 'bg-slate-100 text-slate-500'}`}>
+                    {label} {sortKey === k && <ArrowUpDown size={12} className="ml-1"/>}
+                </button>
+            );
+
+            if(viewArtist) {
+                const artistSongs = songs.filter(s=>s.artistId===viewArtist.id);
+                return (
+                    <div className="animate-fade-in pb-20">
+                        <button onClick={()=>setViewArtist(null)} className="flex items-center text-primary-600 mb-4 font-bold text-sm"><ArrowLeft size={16} className="mr-1"/> アーティスト一覧</button>
+                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 mb-6">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center"><Avatar name={viewArtist.name} size="lg" className="mr-4"/><h2 className="text-2xl font-bold text-slate-800">{viewArtist.name}</h2></div>
+                                <button onClick={()=>onJumpToNewSong(viewArtist.id)} className="bg-primary-50 text-primary-700 p-3 rounded-full hover:bg-primary-100 transition-colors"><Plus size={20}/></button>
+                            </div>
+                        </div>
+                        <h3 className="font-bold text-slate-500 mb-3 ml-2 text-xs uppercase tracking-wider">SONGS ({artistSongs.length})</h3>
+                        <div className="grid grid-cols-1 gap-3">
+                            {artistSongs.map(s => (
+                                <div key={s.id} onClick={()=>onJumpToSongDetail(s)} className="bg-white p-4 rounded-xl border border-slate-100 flex justify-between items-center cursor-pointer hover:border-primary-300 transition-all">
+                                    <span className="font-bold text-slate-700">{s.title}</span><ExternalLink size={16} className="text-slate-300"/>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="animate-fade-in pb-20">
+                    <div className="grid md:grid-cols-3 gap-6">
+                        <div className="md:col-span-1">
+                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4">
+                                <h3 className="font-bold text-slate-800 mb-4">{editId?'編集':'新規登録'}</h3>
+                                <form onSubmit={handleSubmit} className="space-y-3">
+                                    <input type="text" value={name} onChange={e=>setName(e.target.value)} className="w-full p-3 bg-slate-50 border-none rounded-xl text-sm" placeholder="アーティスト名" required/>
+                                    <div className="flex gap-2"><button type="submit" className="flex-1 bg-primary-600 text-white py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-primary-700">{editId?'更新':'追加'}</button>{editId && <button type="button" onClick={()=>{setEditId(null);setName('')}} className="bg-slate-100 text-slate-600 px-4 rounded-xl text-sm font-bold">cancel</button>}</div>
+                                </form>
+                                <button onClick={()=>setIsBulkOpen(true)} className="mt-4 w-full py-2 text-xs font-bold text-primary-600 bg-primary-50 rounded-xl hover:bg-primary-100">一括登録</button>
+                            </div>
+                        </div>
+                        <div className="md:col-span-2">
+                            <div className="mb-4 space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="font-bold text-slate-800">一覧 <span className="text-slate-400 text-sm ml-1">{artists.length}</span></h3>
+                                    <div className="relative"><input type="text" value={search} onChange={e=>setSearch(e.target.value)} className="bg-white border-none shadow-sm rounded-full py-1.5 px-4 text-sm w-40" placeholder="検索"/><Search className="absolute right-3 top-2 text-slate-300" size={14}/></div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <SortButton label="名前順" k="name"/>
+                                    <SortButton label="曲数順" k="songCount"/>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
+                                {sortedArtists.map(artist => (
+                                    <div key={artist.id} onClick={()=>setViewArtist(artist)} className="bg-white p-3 rounded-2xl border border-slate-100 hover:border-primary-300 hover:shadow-md transition-all cursor-pointer flex items-center group">
+                                        <Avatar name={artist.name} size="sm" className="mr-3"/>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-bold text-slate-700 text-sm truncate">{artist.name}</div>
+                                            <div className="text-[10px] text-slate-400">{artist.songCount}曲</div>
+                                        </div>
+                                        <div className="opacity-0 group-hover:opacity-100 flex transition-opacity">
+                                            <button onClick={(e)=>{e.stopPropagation();setName(artist.name);setEditId(artist.id)}} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg"><Edit2 size={14}/></button>
+                                            <button onClick={(e)=>handleDelete(e,artist.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={14}/></button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    <BulkAddModal isOpen={isBulkOpen} onClose={()=>setIsBulkOpen(false)} type="artist" onAdd={(lines)=>setArtists([...artists,...lines.filter(n=>!artists.some(a=>a.name===n)).map(n=>({id:crypto.randomUUID(),name:n}))])} />
+                </div>
+            );
+        }
+
+        // --- Record & History & App (reusing existing code but ensuring imports) ---
+        function RecordScore({ scores, setScores, artists, songs, prefill, onPrefillChange }) {
+            const [selectedArtistId, setSelectedArtistId] = useState(''); const [selectedSongId, setSelectedSongId] = useState(''); const [scoreValue, setScoreValue] = useState(''); const [memo, setMemo] = useState(''); const [inputMode, setInputMode] = useState('select'); const [customArtist, setCustomArtist] = useState(''); const [customSong, setCustomSong] = useState(''); const [isBulkOpen, setIsBulkOpen] = useState(false); const toast = useToast();
+            useEffect(() => { if (prefill) { setInputMode('select'); setSelectedArtistId(prefill.artistId); setSelectedSongId(prefill.songId); onPrefillChange(null); } }, [prefill, onPrefillChange]);
+            const filteredSongs = useMemo(() => { if (!selectedArtistId) return []; return songs.filter(song => song.artistId === selectedArtistId); }, [selectedArtistId, songs]);
+            
+            // Updated handleBulkAdd to better link artists/songs
+            const handleBulkAdd = (parsedData) => {
+                const newScores = parsedData.map((item, index) => {
+                    // Try to match artist by name (case-insensitive)
+                    const matchedArtist = artists.find(a => a.name.trim().toLowerCase() === item.artist.trim().toLowerCase());
+                    
+                    let matchedSong = null;
+                    if (matchedArtist) {
+                        // If artist found, try to find song by title AND artistId
+                        matchedSong = songs.find(s => 
+                            s.title.trim().toLowerCase() === item.title.trim().toLowerCase() && 
+                            s.artistId === matchedArtist.id
+                        );
+                    } else {
+                        // If artist not found, we could try to find song by title only, 
+                        // but that's risky (multiple songs with same title).
+                        // Fallback: Check if there's *any* song with this title. 
+                        // For safety, let's only link if we are reasonably sure. 
+                        // Currently, let's strictly require artist match for song linking to avoid errors.
+                        matchedSong = songs.find(s => s.title.trim().toLowerCase() === item.title.trim().toLowerCase());
+                    }
+
+                    // Use registered names if available for consistency
+                    const titleToUse = matchedSong ? matchedSong.title : item.title;
+                    const artistToUse = matchedArtist ? matchedArtist.name : item.artist;
+
+                    return {
+                        id: crypto.randomUUID() + '-' + index, // Ensure uniqueness
+                        title: titleToUse,
+                        artist: artistToUse,
+                        score: item.score,
+                        date: new Date().toISOString(),
+                        memo: item.memo,
+                        artistId: matchedArtist ? matchedArtist.id : null,
+                        songId: matchedSong ? matchedSong.id : null,
+                    };
+                });
+                setScores([...newScores, ...scores]);
+            };
+
+            const handleSubmit = (e) => { e.preventDefault(); let titleToSave = '', artistToSave = ''; if (inputMode === 'manual') { titleToSave = customSong; artistToSave = customArtist; } else { const artistObj = artists.find(a => a.id === selectedArtistId); const songObj = songs.find(s => s.id === selectedSongId); if (!artistObj || !songObj) return; titleToSave = songObj.title; artistToSave = artistObj.name; } if (!titleToSave || !scoreValue) return; const newScore = { id: Date.now().toString(), title: titleToSave, artist: artistToSave, score: parseFloat(scoreValue), date: new Date().toISOString(), memo: memo, artistId: inputMode === 'manual' ? null : selectedArtistId, songId: inputMode === 'manual' ? null : selectedSongId, }; setScores([newScore, ...scores]); setScoreValue(''); setMemo(''); if (inputMode === 'select') setSelectedSongId(''); else setCustomSong(''); toast('スコアを記録しました！'); };
+            return (
+                <div className="max-w-xl mx-auto py-4 animate-fade-in">
+                    <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 overflow-hidden">
+                        <div className="bg-gradient-to-r from-primary-600 to-primary-700 p-8 text-center relative overflow-hidden"><div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div><h2 className="text-2xl font-bold text-white relative z-10 flex items-center justify-center"><Mic size={24} className="mr-2"/> スコア記録</h2></div>
+                        <div className="p-6 md:p-8">
+                            <div className="flex bg-slate-100 p-1 rounded-xl mb-8 relative"><div className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-lg shadow-sm transition-all duration-300 ${inputMode === 'select' ? 'left-1' : 'left-[calc(50%+4px)]'}`}></div><button onClick={() => setInputMode('select')} className={`flex-1 flex items-center justify-center py-2.5 text-sm font-bold z-10 transition-colors ${inputMode === 'select' ? 'text-primary-600' : 'text-slate-500'}`}><ListIcon size={16} className="mr-2"/> マスタから選択</button><button onClick={() => setInputMode('manual')} className={`flex-1 flex items-center justify-center py-2.5 text-sm font-bold z-10 transition-colors ${inputMode === 'manual' ? 'text-primary-600' : 'text-slate-500'}`}><Edit2 size={16} className="mr-2"/> 直接入力</button></div>
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                {inputMode === 'select' ? (<><div><label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">アーティスト</label><div className="relative"><select required value={selectedArtistId} onChange={e => { setSelectedArtistId(e.target.value); setSelectedSongId(''); }} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl appearance-none focus:ring-2 focus:ring-primary-500 font-bold text-slate-700"><option value="">選択</option>{artists.map(a => (<option key={a.id} value={a.id}>{a.name}</option>))}</select></div></div><div><label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">曲名</label><div className="relative"><select required value={selectedSongId} onChange={e => setSelectedSongId(e.target.value)} disabled={!selectedArtistId} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl appearance-none focus:ring-2 focus:ring-primary-500 font-bold text-slate-700 disabled:opacity-50"><option value="">{selectedArtistId ? '選択' : '↑ 先にアーティストを選択'}</option>{filteredSongs.map(s => (<option key={s.id} value={s.id}>{s.title}</option>))}</select></div></div></>) : (<><div><label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">アーティスト名</label><input type="text" required value={customArtist} onChange={e => setCustomArtist(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-primary-500 font-bold" placeholder="例: 米津玄師" /></div><div><label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">曲名</label><input type="text" required value={customSong} onChange={e => setCustomSong(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-primary-500 font-bold" placeholder="例: Lemon" /></div></>)}
+                                <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">点数</label><div className="relative"><input type="number" required step="0.001" min="0" max="100" value={scoreValue} onChange={(e) => setScoreValue(e.target.value)} className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-3xl font-bold focus:ring-2 focus:ring-primary-500 text-slate-800" placeholder="00.000" /><div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Star className="text-amber-400 fill-current" size={24} /></div></div></div>
+                                <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">メモ</label><input type="text" value={memo} onChange={e => setMemo(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-primary-500 text-sm" placeholder="キー設定など" /></div>
+                                <button type="submit" className="w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white p-4 rounded-2xl font-bold text-lg hover:shadow-lg active:scale-95 transition-all flex items-center justify-center mt-4"><Save className="mr-2" /> 記録を保存</button>
+                            </form>
+                            <div className="mt-8 text-center pt-4 border-t border-slate-100"><button onClick={() => setIsBulkOpen(true)} className="text-slate-400 text-xs font-bold hover:text-primary-600 flex items-center justify-center w-full py-2 transition-colors"><ListIcon size={14} className="mr-1"/> 複数まとめて登録はこちら</button></div>
+                        </div>
+                    </div>
+                    <BulkScoreModal isOpen={isBulkOpen} onClose={() => setIsBulkOpen(false)} onAdd={handleBulkAdd} />
+                </div>
+            );
+        }
+
+        function History({ scores, setScores }) {
+            const [search, setSearch] = useState(''); const toast = useToast();
+            const handleDelete = (id) => { if (window.confirm('この記録を削除しますか？')) { setScores(scores.filter(s => s.id !== id)); toast('削除しました'); } };
+            const filteredScores = scores.filter(s => s.title.toLowerCase().includes(search.toLowerCase()) || s.artist.toLowerCase().includes(search.toLowerCase()) || (s.memo && s.memo.toLowerCase().includes(search.toLowerCase())));
+            return (
+                <div className="animate-fade-in pb-20">
+                    <div className="sticky top-0 bg-gray-50/95 backdrop-blur z-10 py-4 mb-4">
+                        <div className="flex justify-between items-end mb-4"><h2 className="text-2xl font-bold text-slate-800">History</h2><span className="text-xs font-bold bg-white border border-slate-200 text-slate-600 px-3 py-1 rounded-full">{scores.length} Records</span></div>
+                        <div className="relative"><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="検索..." className="w-full p-3 pl-10 bg-white border-none shadow-sm rounded-2xl focus:ring-2 focus:ring-primary-500 text-sm" /><Search className="absolute left-3 top-3 text-slate-400" size={18} /></div>
+                    </div>
+                    {filteredScores.length === 0 ? (<div className="flex flex-col items-center justify-center py-20 text-slate-400"><div className="bg-slate-100 p-6 rounded-full mb-4"><ListIcon size={32} className="opacity-50"/></div><p>履歴なし</p></div>) : (
+                        <div className="space-y-3">{filteredScores.map((score) => (
+                            <div key={score.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow flex items-center justify-between group">
+                                <div className="flex items-center flex-1 min-w-0 mr-4"><Avatar name={score.artist} size="md" className="mr-4 flex-shrink-0"/><div className="min-w-0"><div className="font-bold text-slate-800 truncate text-lg leading-tight">{score.title}</div><div className="text-xs text-slate-500 mt-1 flex items-center"><span className="font-medium text-slate-600">{score.artist}</span><span className="mx-2 text-slate-300">|</span><span>{new Date(score.date).toLocaleDateString('ja-JP')}</span></div>{score.memo && <div className="mt-1 text-xs text-amber-600 bg-amber-50 inline-block px-2 py-0.5 rounded">{score.memo}</div>}</div></div>
+                                <div className="flex flex-col items-end"><div className="text-2xl font-black text-primary-600 font-mono tracking-tighter">{score.score.toFixed(3)}</div><button onClick={() => handleDelete(score.id)} className="mt-1 text-slate-300 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button></div>
+                            </div>
+                        ))}</div>
+                    )}
+                </div>
+            );
+        }
+
+        function App() {
+            const [scores, setScores] = useLocalStorage(STORAGE_KEY_SCORES, []); const [artists, setArtists] = useLocalStorage(STORAGE_KEY_ARTISTS, []); const [songs, setSongs] = useLocalStorage(STORAGE_KEY_SONGS, []); const [theme, setTheme] = useLocalStorage(STORAGE_KEY_THEME, 'indigo');
+            const [activeTab, setActiveTab] = useState('dashboard'); const [recordPrefill, setRecordPrefill] = useState(null); const [songNavParams, setSongNavParams] = useState(null); const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+            useEffect(() => { let styleEl = document.getElementById('dynamic-theme-styles'); if (!styleEl) { styleEl = document.createElement('style'); styleEl.id = 'dynamic-theme-styles'; document.head.appendChild(styleEl); } const selectedTheme = themes[theme] || themes.indigo; styleEl.innerHTML = `:root { ${Object.entries(selectedTheme).map(([k, v]) => `${k}: ${v};`).join('\n')} }`; }, [theme]);
+            const navItems = [{ id: 'dashboard', label: 'Home', icon: <BarChart2 size={24} /> }, { id: 'record', label: 'Record', icon: <Mic size={24} /> }, { id: 'history', label: 'History', icon: <ListIcon size={24} /> }, { id: 'artists', label: 'Artists', icon: <User size={24} /> }, { id: 'songs', label: 'Songs', icon: <Music size={24} /> }];
+            const handleRecordClick = (artistId, songId) => { setRecordPrefill({ artistId, songId }); setActiveTab('record'); }; const handleJumpToSongDetail = (song) => { setSongNavParams({ type: 'detail', song }); setActiveTab('songs'); }; const handleJumpToNewSong = (artistId) => { setSongNavParams({ type: 'new', artistId }); setActiveTab('songs'); };
+            return (
+                <ToastProvider>
+                    <div className="flex h-screen overflow-hidden bg-gray-50 font-sans text-gray-800">
+                        <aside className="hidden md:flex flex-col w-20 lg:w-64 bg-white border-r border-gray-200 z-20 transition-all duration-300">
+                            <div className="p-6 flex items-center justify-center lg:justify-start border-b border-gray-100"><div className="w-10 h-10 bg-gradient-to-tr from-primary-500 to-accent-500 rounded-xl flex items-center justify-center text-white shadow-lg"><Mic size={20} /></div><span className="hidden lg:block ml-3 font-extrabold text-xl tracking-tight text-slate-800">Karaoke<span className="text-primary-600">Log</span></span></div>
+                            <nav className="flex-1 py-6 px-3 space-y-2">{navItems.map(item => (<button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center justify-center lg:justify-start px-3 lg:px-4 py-3 rounded-2xl transition-all duration-200 group ${activeTab === item.id ? 'bg-primary-50 text-primary-600 shadow-sm' : 'text-slate-400 hover:bg-gray-50 hover:text-slate-600'}`}><div className={`p-1 transition-transform group-hover:scale-110 ${activeTab === item.id ? 'scale-110' : ''}`}>{item.icon}</div><span className={`hidden lg:block ml-3 font-bold text-sm`}>{item.label}</span></button>))}</nav>
+                            <div className="p-4 border-t border-gray-100"><button onClick={() => setIsSettingsOpen(true)} className="w-full flex items-center justify-center lg:justify-start px-3 lg:px-4 py-3 rounded-2xl text-slate-400 hover:bg-gray-50 hover:text-slate-600 transition-colors"><Settings size={24} /><span className="hidden lg:block ml-3 font-bold text-sm">Settings</span></button></div>
+                        </aside>
+                        <div className="flex-1 flex flex-col overflow-hidden relative">
+                            <header className="md:hidden bg-white/80 backdrop-blur-md p-4 flex items-center justify-between sticky top-0 z-20 border-b border-gray-100"><div className="flex items-center"><div className="w-8 h-8 bg-gradient-to-tr from-primary-500 to-accent-500 rounded-lg flex items-center justify-center text-white mr-2"><Mic size={16} /></div><h1 className="text-lg font-extrabold text-slate-800">KaraokeLog</h1></div><button onClick={() => setIsSettingsOpen(true)} className="p-2 text-slate-400 hover:text-slate-600"><Settings size={24} /></button></header>
+                            <main className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar"><div className="max-w-6xl mx-auto">{activeTab === 'dashboard' && <Dashboard scores={scores} artists={artists} songs={songs} setActiveTab={setActiveTab} />}{activeTab === 'record' && <RecordScore scores={scores} setScores={setScores} artists={artists} songs={songs} prefill={recordPrefill} onPrefillChange={setRecordPrefill} />}{activeTab === 'history' && <History scores={scores} setScores={setScores} />}{activeTab === 'artists' && <ArtistManager artists={artists} setArtists={setArtists} songs={songs} scores={scores} onJumpToSongDetail={handleJumpToSongDetail} onJumpToNewSong={handleJumpToNewSong} />}{activeTab === 'songs' && <SongManager songs={songs} setSongs={setSongs} artists={artists} scores={scores} onRecordClick={handleRecordClick} navParams={songNavParams} onNavParamsConsumed={() => setSongNavParams(null)} />}</div></main>
+                            <nav className="md:hidden fixed bottom-6 left-4 right-4 z-30"><div className="bg-slate-800/90 backdrop-blur-xl rounded-full p-2 flex justify-between items-center shadow-2xl border border-slate-700/50">{navItems.map(item => (<button key={item.id} onClick={() => setActiveTab(item.id)} className={`relative p-3 rounded-full transition-all duration-300 ${activeTab === item.id ? 'bg-primary-500 text-white shadow-lg transform -translate-y-1 scale-110' : 'text-slate-400 hover:text-white'}`}>{React.cloneElement(item.icon, { size: 22 })}{activeTab === item.id && <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-[10px] font-bold text-slate-800 bg-white px-2 py-0.5 rounded-full shadow-sm opacity-0 animate-fade-in">{item.label}</span>}</button>))}</div></nav>
+                            {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} scores={scores} artists={artists} songs={songs} currentTheme={theme} onChangeTheme={setTheme} />}
+                        </div>
+                    </div>
+                </ToastProvider>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
