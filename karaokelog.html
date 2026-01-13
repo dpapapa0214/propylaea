@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Karaoke Log</title>
+    <title>Karaoke Log v9.1 (Export & Date Update)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -266,12 +266,46 @@
             const themeOptions = [{ id: 'indigo', name: 'インディゴ', bg: 'bg-indigo-600', accent: 'bg-pink-500' }, { id: 'rose', name: 'ローズ', bg: 'bg-rose-600', accent: 'bg-emerald-500' }, { id: 'teal', name: 'ティール', bg: 'bg-teal-600', accent: 'bg-amber-500' }];
             const handleExportJson = () => { const data = { scores, artists, songs, theme: currentTheme, exportedAt: new Date().toISOString(), version: 6 }; const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `karaoke_log_backup.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); toast('JSONエクスポート完了'); };
             const handleExportCsv = () => { const bom = new Uint8Array([0xEF, 0xBB, 0xBF]); let csvContent = "日時,曲名,アーティスト,点数,メモ\n"; scores.forEach(s => { const line = [`"${new Date(s.date).toLocaleString()}"`, `"${s.title.replace(/"/g, '""')}"`, `"${s.artist.replace(/"/g, '""')}"`, s.score, `"${(s.memo || '').replace(/"/g, '""')}"`].join(","); csvContent += line + "\n"; }); const blob = new Blob([bom, csvContent], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `karaoke_log_scores.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); toast('CSVエクスポート完了'); };
+            const handleExportGroupedCsv = () => {
+                const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+                const sortedScores = [...scores].sort((a, b) => new Date(a.date) - new Date(b.date));
+                const grouped = {};
+                sortedScores.forEach(s => {
+                    const key = `${s.title}__${s.artist}`;
+                    if (!grouped[key]) { grouped[key] = { title: s.title, artist: s.artist, scores: [] }; }
+                    grouped[key].scores.push(s.score);
+                });
+                let csvContent = "曲名,アーティスト,点数1,点数2,点数3...\n";
+                Object.values(grouped).forEach(item => {
+                    const line = [`"${item.title.replace(/"/g, '""')}"`, `"${item.artist.replace(/"/g, '""')}"`, ...item.scores].join(",");
+                    csvContent += line + "\n";
+                });
+                const blob = new Blob([bom, csvContent], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `karaoke_log_grouped.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                toast('曲別CSVエクスポート完了');
+            };
             const handleFileChange = (event) => { const file = event.target.files[0]; if (!file) return; if (!window.confirm('現在のデータを上書きしますか？')) { event.target.value = ''; return; } const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if (Array.isArray(data.scores)) { localStorage.setItem(STORAGE_KEY_SCORES, JSON.stringify(data.scores)); localStorage.setItem(STORAGE_KEY_ARTISTS, JSON.stringify(data.artists || [])); localStorage.setItem(STORAGE_KEY_SONGS, JSON.stringify(data.songs || [])); if (data.theme) localStorage.setItem(STORAGE_KEY_THEME, JSON.stringify(data.theme)); alert('インポート完了。再読み込みします。'); window.location.reload(); } } catch (err) { toast('読み込み失敗', 'error'); } }; reader.readAsText(file); };
             return (
                 <Modal isOpen={true} onClose={onClose} title="設定">
                     <div className="space-y-8">
                         <div><h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">カラーテーマ</h4><div className="grid grid-cols-3 gap-4">{themeOptions.map(t => (<button key={t.id} onClick={() => onChangeTheme(t.id)} className={`group relative p-4 rounded-2xl border transition-all ${currentTheme === t.id ? 'border-primary-500 bg-primary-50/50' : 'border-slate-200 hover:border-slate-300'}`}><div className="flex justify-center space-x-2 mb-3"><span className={`w-6 h-6 rounded-full shadow-sm ${t.bg}`}></span><span className={`w-6 h-6 rounded-full shadow-sm ${t.accent} -ml-2`}></span></div><div className="text-xs font-bold text-center text-slate-600">{t.name}</div></button>))}</div></div>
-                        <div><h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">データ管理</h4><div className="grid grid-cols-2 gap-4"><button onClick={handleExportJson} className="flex flex-col items-center bg-white border border-slate-200 text-slate-600 p-4 rounded-2xl font-bold hover:bg-slate-50"><FileText className="mb-2 text-primary-500" size={24}/><span className="text-xs">JSON保存</span></button><button onClick={handleExportCsv} className="flex flex-col items-center bg-white border border-slate-200 text-slate-600 p-4 rounded-2xl font-bold hover:bg-slate-50"><ListIcon className="mb-2 text-green-500" size={24}/><span className="text-xs">CSV保存</span></button></div><button onClick={() => fileInputRef.current?.click()} className="w-full mt-4 bg-slate-100 text-slate-600 px-4 py-4 rounded-xl font-bold hover:bg-slate-200 text-sm"><Upload className="mr-2 inline" size={18}/> バックアップから復元</button><input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" /></div>
+                        <div>
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">データ管理</h4>
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <button onClick={handleExportJson} className="flex flex-col items-center bg-white border border-slate-200 text-slate-600 p-4 rounded-2xl font-bold hover:bg-slate-50"><FileText className="mb-2 text-primary-500" size={24}/><span className="text-xs">JSON保存</span></button>
+                                <button onClick={handleExportCsv} className="flex flex-col items-center bg-white border border-slate-200 text-slate-600 p-4 rounded-2xl font-bold hover:bg-slate-50"><ListIcon className="mb-2 text-green-500" size={24}/><span className="text-xs">CSV保存</span></button>
+                            </div>
+                            <button onClick={handleExportGroupedCsv} className="w-full bg-white border border-slate-200 text-slate-600 px-4 py-4 rounded-xl font-bold hover:bg-slate-50 text-sm mb-4"><ListIcon className="mr-2 inline text-amber-500" size={18}/> 曲別CSV保存（横並び）</button>
+                            <button onClick={() => fileInputRef.current?.click()} className="w-full bg-slate-100 text-slate-600 px-4 py-4 rounded-xl font-bold hover:bg-slate-200 text-sm"><Upload className="mr-2 inline" size={18}/> バックアップから復元</button>
+                            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" />
+                        </div>
                     </div>
                 </Modal>
             )
@@ -679,41 +713,34 @@
         // --- Record & History & App (reusing existing code but ensuring imports) ---
         function RecordScore({ scores, setScores, artists, songs, prefill, onPrefillChange }) {
             const [selectedArtistId, setSelectedArtistId] = useState(''); const [selectedSongId, setSelectedSongId] = useState(''); const [scoreValue, setScoreValue] = useState(''); const [memo, setMemo] = useState(''); const [inputMode, setInputMode] = useState('select'); const [customArtist, setCustomArtist] = useState(''); const [customSong, setCustomSong] = useState(''); const [isBulkOpen, setIsBulkOpen] = useState(false); const toast = useToast();
+            // New Date State
+            const [recordDate, setRecordDate] = useState(() => {
+                const now = new Date();
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                return now.toISOString().slice(0, 16);
+            });
+
             useEffect(() => { if (prefill) { setInputMode('select'); setSelectedArtistId(prefill.artistId); setSelectedSongId(prefill.songId); onPrefillChange(null); } }, [prefill, onPrefillChange]);
             const filteredSongs = useMemo(() => { if (!selectedArtistId) return []; return songs.filter(song => song.artistId === selectedArtistId); }, [selectedArtistId, songs]);
             
             // Updated handleBulkAdd to better link artists/songs
             const handleBulkAdd = (parsedData) => {
                 const newScores = parsedData.map((item, index) => {
-                    // Try to match artist by name (case-insensitive)
                     const matchedArtist = artists.find(a => a.name.trim().toLowerCase() === item.artist.trim().toLowerCase());
-                    
                     let matchedSong = null;
                     if (matchedArtist) {
-                        // If artist found, try to find song by title AND artistId
-                        matchedSong = songs.find(s => 
-                            s.title.trim().toLowerCase() === item.title.trim().toLowerCase() && 
-                            s.artistId === matchedArtist.id
-                        );
+                        matchedSong = songs.find(s => s.title.trim().toLowerCase() === item.title.trim().toLowerCase() && s.artistId === matchedArtist.id);
                     } else {
-                        // If artist not found, we could try to find song by title only, 
-                        // but that's risky (multiple songs with same title).
-                        // Fallback: Check if there's *any* song with this title. 
-                        // For safety, let's only link if we are reasonably sure. 
-                        // Currently, let's strictly require artist match for song linking to avoid errors.
                         matchedSong = songs.find(s => s.title.trim().toLowerCase() === item.title.trim().toLowerCase());
                     }
-
-                    // Use registered names if available for consistency
                     const titleToUse = matchedSong ? matchedSong.title : item.title;
                     const artistToUse = matchedArtist ? matchedArtist.name : item.artist;
-
                     return {
-                        id: crypto.randomUUID() + '-' + index, // Ensure uniqueness
+                        id: crypto.randomUUID() + '-' + index,
                         title: titleToUse,
                         artist: artistToUse,
                         score: item.score,
-                        date: new Date().toISOString(),
+                        date: new Date().toISOString(), // Bulk adds use current time for simplicity
                         memo: item.memo,
                         artistId: matchedArtist ? matchedArtist.id : null,
                         songId: matchedSong ? matchedSong.id : null,
@@ -722,7 +749,36 @@
                 setScores([...newScores, ...scores]);
             };
 
-            const handleSubmit = (e) => { e.preventDefault(); let titleToSave = '', artistToSave = ''; if (inputMode === 'manual') { titleToSave = customSong; artistToSave = customArtist; } else { const artistObj = artists.find(a => a.id === selectedArtistId); const songObj = songs.find(s => s.id === selectedSongId); if (!artistObj || !songObj) return; titleToSave = songObj.title; artistToSave = artistObj.name; } if (!titleToSave || !scoreValue) return; const newScore = { id: Date.now().toString(), title: titleToSave, artist: artistToSave, score: parseFloat(scoreValue), date: new Date().toISOString(), memo: memo, artistId: inputMode === 'manual' ? null : selectedArtistId, songId: inputMode === 'manual' ? null : selectedSongId, }; setScores([newScore, ...scores]); setScoreValue(''); setMemo(''); if (inputMode === 'select') setSelectedSongId(''); else setCustomSong(''); toast('スコアを記録しました！'); };
+            const handleSubmit = (e) => { 
+                e.preventDefault(); 
+                let titleToSave = '', artistToSave = ''; 
+                if (inputMode === 'manual') { 
+                    titleToSave = customSong; artistToSave = customArtist; 
+                } else { 
+                    const artistObj = artists.find(a => a.id === selectedArtistId); 
+                    const songObj = songs.find(s => s.id === selectedSongId); 
+                    if (!artistObj || !songObj) return; 
+                    titleToSave = songObj.title; artistToSave = artistObj.name; 
+                } 
+                if (!titleToSave || !scoreValue) return; 
+                
+                const newScore = { 
+                    id: Date.now().toString(), 
+                    title: titleToSave, 
+                    artist: artistToSave, 
+                    score: parseFloat(scoreValue), 
+                    date: new Date(recordDate).toISOString(), // Use selected date
+                    memo: memo, 
+                    artistId: inputMode === 'manual' ? null : selectedArtistId, 
+                    songId: inputMode === 'manual' ? null : selectedSongId, 
+                }; 
+                setScores([newScore, ...scores]); 
+                setScoreValue(''); setMemo(''); 
+                if (inputMode === 'select') setSelectedSongId(''); 
+                else setCustomSong(''); 
+                toast('スコアを記録しました！'); 
+            };
+
             return (
                 <div className="max-w-xl mx-auto py-4 animate-fade-in">
                     <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 overflow-hidden">
@@ -732,6 +788,9 @@
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 {inputMode === 'select' ? (<><div><label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">アーティスト</label><div className="relative"><select required value={selectedArtistId} onChange={e => { setSelectedArtistId(e.target.value); setSelectedSongId(''); }} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl appearance-none focus:ring-2 focus:ring-primary-500 font-bold text-slate-700"><option value="">選択</option>{artists.map(a => (<option key={a.id} value={a.id}>{a.name}</option>))}</select></div></div><div><label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">曲名</label><div className="relative"><select required value={selectedSongId} onChange={e => setSelectedSongId(e.target.value)} disabled={!selectedArtistId} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl appearance-none focus:ring-2 focus:ring-primary-500 font-bold text-slate-700 disabled:opacity-50"><option value="">{selectedArtistId ? '選択' : '↑ 先にアーティストを選択'}</option>{filteredSongs.map(s => (<option key={s.id} value={s.id}>{s.title}</option>))}</select></div></div></>) : (<><div><label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">アーティスト名</label><input type="text" required value={customArtist} onChange={e => setCustomArtist(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-primary-500 font-bold" placeholder="例: 米津玄師" /></div><div><label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">曲名</label><input type="text" required value={customSong} onChange={e => setCustomSong(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-primary-500 font-bold" placeholder="例: Lemon" /></div></>)}
                                 <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">点数</label><div className="relative"><input type="number" required step="0.001" min="0" max="100" value={scoreValue} onChange={(e) => setScoreValue(e.target.value)} className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-3xl font-bold focus:ring-2 focus:ring-primary-500 text-slate-800" placeholder="00.000" /><div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Star className="text-amber-400 fill-current" size={24} /></div></div></div>
+                                
+                                <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">日時</label><input type="datetime-local" required value={recordDate} onChange={e => setRecordDate(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-700" /></div>
+
                                 <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">メモ</label><input type="text" value={memo} onChange={e => setMemo(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-primary-500 text-sm" placeholder="キー設定など" /></div>
                                 <button type="submit" className="w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white p-4 rounded-2xl font-bold text-lg hover:shadow-lg active:scale-95 transition-all flex items-center justify-center mt-4"><Save className="mr-2" /> 記録を保存</button>
                             </form>
