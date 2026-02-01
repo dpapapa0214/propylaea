@@ -167,6 +167,14 @@
             </div>
         </div>
 
+        <!-- 連絡先ボタン (デスクトップ用サイドバー下部) -->
+        <div class="p-4 border-t border-slate-200 hidden md:block mt-auto bg-slate-50/50 backdrop-blur-sm">
+            <button onclick="openContactModal()" class="w-full bg-slate-800 text-white py-2.5 px-4 rounded-xl text-sm font-bold shadow-md hover:bg-slate-700 transition-colors flex items-center justify-center gap-2 group">
+                <i class="fas fa-user-circle group-hover:scale-110 transition-transform"></i> 
+                <span>開発者に連絡</span>
+            </button>
+        </div>
+
         <!-- モバイル用ドロワーメニュー (デフォルト非表示) -->
         <div id="mobile-menu" class="hidden md:hidden absolute top-[73px] left-0 w-full h-[calc(100vh-73px)] bg-slate-50 z-30 overflow-y-auto p-4 border-b border-slate-200">
             <!-- モバイルメニューの中身はJSで制御 -->
@@ -256,6 +264,58 @@
             </div>
         </div>
     </main>
+
+    <!-- 連絡先モーダル -->
+    <div id="contact-modal" class="fixed inset-0 z-50 hidden fade-in-up">
+        <!-- 背景オーバーレイ -->
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeContactModal()"></div>
+        
+        <!-- モーダルコンテンツ -->
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl shadow-2xl w-11/12 max-w-sm overflow-hidden border border-white/50">
+            <div class="relative h-28 bg-gradient-to-br from-blue-600 to-indigo-700">
+                <button onclick="closeContactModal()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-black/10 text-white hover:bg-black/20 transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="absolute -bottom-10 left-1/2 transform -translate-x-1/2">
+                    <div class="w-20 h-20 bg-white rounded-full p-1 shadow-lg ring-4 ring-white/30">
+                        <img src="https://api.dicebear.com/9.x/avataaars/svg?seed=Alex&backgroundColor=b6e3f4" alt="Profile" class="w-full h-full rounded-full">
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 pt-12 pb-8 text-center">
+                <h3 class="text-xl font-bold text-slate-800 mb-1">管理者</h3>
+                <p class="text-slate-500 text-xs font-medium uppercase tracking-wide mb-6">Vantage App Developer</p>
+                
+                <div class="space-y-3 text-left">
+                    <div class="group flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 transition-colors">
+                        <div class="w-10 h-10 rounded-full bg-white text-blue-600 shadow-sm flex items-center justify-center shrink-0">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase">Email</p>
+                            <a href="mailto:contact@example.com" class="text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors truncate block">zonixzyusin@gmail.com</a>
+                        </div>
+                    </div>
+                    
+                    <div class="group flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-sky-200 hover:bg-sky-50/50 transition-colors">
+                        <div class="w-10 h-10 rounded-full bg-white text-sky-500 shadow-sm flex items-center justify-center shrink-0">
+                            <i class="fab fa-twitter"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase">Twitter / X</p>
+                            <a href="#" target="_blank" class="text-sm font-medium text-slate-700 hover:text-sky-500 transition-colors truncate block">-</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-4 border-t border-slate-100">
+                    <p class="text-xs text-slate-400">
+                        &copy; 2024 Vantage News Reader<br>Designed with <i class="fas fa-heart text-red-400 mx-1"></i> in Japan
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         /**
@@ -424,7 +484,15 @@
 
         function setupMobileMenu() {
             const sidebarContent = document.getElementById('sidebar-content').innerHTML;
-            document.getElementById('mobile-menu').innerHTML = sidebarContent;
+            // モバイルメニューにも連絡先ボタンを追加
+            const contactBtnHtml = `
+                <div class="mt-6 pt-6 border-t border-slate-200">
+                    <button onclick="openContactModal(); toggleMobileMenu()" class="w-full bg-slate-800 text-white py-3 px-4 rounded-xl text-sm font-bold shadow-md active:scale-95 transition-transform flex items-center justify-center gap-2">
+                        <i class="fas fa-user-circle"></i> 開発者に連絡
+                    </button>
+                </div>
+            `;
+            document.getElementById('mobile-menu').innerHTML = sidebarContent + contactBtnHtml;
         }
 
         function toggleMobileMenu() {
@@ -988,6 +1056,19 @@
 
         function loadCache(id) {
             try { return JSON.parse(localStorage.getItem(`rss_cache_${id}`)); } catch(e){ return null; }
+        }
+
+        // モーダル操作機能
+        function openContactModal() {
+            const modal = document.getElementById('contact-modal');
+            modal.classList.remove('hidden');
+            // アニメーションリセット用
+            const content = modal.querySelector('div:last-child');
+            content.classList.remove('animate-none'); 
+        }
+
+        function closeContactModal() {
+            document.getElementById('contact-modal').classList.add('hidden');
         }
 
         // 開始
